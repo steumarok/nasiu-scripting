@@ -1,0 +1,79 @@
+#summary One-sentence summary of this page.
+
+= Introduction =
+
+Few words, go to the code.
+
+
+= How to interface C++ and scripting languages =
+
+<code language="c++">
+class A
+{
+	int n_;
+
+public:
+	A();
+	A(int n);
+
+	virtual ~A();
+	void method0();
+	void method1(int a);
+	int get_n() const;
+	void set_n(int n);
+};
+
+
+NASIU_V8W_ADAPT_CLASS(
+	A, ,
+	(int),
+	(method0)
+	(method1),
+	("n", get_n, set_n)
+	("n1", get_n,));
+
+/*...*/
+
+using namespace nasiu::scripting;
+
+script_engine<tags::v8w> se;
+se.bind_class<A>();
+
+// Create A from javascript and use in from C++.
+A* a1 = se.eval<A*>("new A(20)");
+cout << "a1.n=" << a1->get_n() << endl;
+
+// Return the class from javascript, instantiate, use, delete in C++ 
+// (see more :) )
+class_type<tags::v8w, A> type_A = se.eval<class_type<tags::v8w, A> >("A");
+A* a2 = type_A.new_instance(30);
+cout << "a2.n=" << a2->get_n() << endl;
+delete a2;
+
+// Override some methods of A in Javascript, return the class and use in in C++
+class_type<tags::v8w, A> type_ExtA = se.eval<class_type<tags::v8w, A> >(
+	"ExtA = function(n)"
+	"{"
+	"	var base = new A(n);"
+	"	base.__proto__ = ExtA.prototype;"
+	"	return base;"
+	"};"
+	"ExtA.prototype.__proto__ = A.prototype;"
+	"ExtA.prototype.method1 = function(n)"
+	"{"
+	"	A.prototype.method1.call(this, n*n);"
+	"};"
+	"ExtA.prototype.method0 = function(n)"
+	"{"
+	"	A.prototype.method0.call(this);"
+	"};"
+	"ExtA"
+);
+A* a3 = type_ExtA.new_instance(40);
+cout << "a3.n=" << a3->get_n() << endl;
+cout << "a3.method0() "; a3->method0(); cout << endl;
+cout << "a3.method1() "; a3->method1(40); cout << endl;
+delete a3;
+
+
+</code>
