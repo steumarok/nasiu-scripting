@@ -14,6 +14,8 @@ Now, go to the code.
 
 = How to interface C++ and scripting languages =
 
+http://code.google.com/p/nasiu-scripting/source/browse/trunk/src/V8Wrapper.cpp
+
 <code language="c++">
 class A
 {
