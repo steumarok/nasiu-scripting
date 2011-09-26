@@ -41,7 +41,7 @@ NASIU_V8W_ADAPT_CLASS(
 	("n", get_n, set_n)
 	("n1", get_n,));
 
-...
+
 
 using namespace nasiu::scripting;
 
