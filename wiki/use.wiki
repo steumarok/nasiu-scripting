@@ -21,29 +21,29 @@ Class definition
 <code language="cpp">
 class A
 {
-	int n_;
+  int n_;
 
 public:
-	A();
-	A(int n);
+  A();
+  A(int n);
+  virtual ~A();
 
-	virtual ~A();
-	void method0();
-	void method1(int a);
-	int get_n() const;
-	void set_n(int n);
+  void method0();
+  void method1(int a);
+  int get_n() const;
+  void set_n(int n);
 };
 </code>
 
 Adapter declaration
 <code language="cpp">
 NASIU_V8W_ADAPT_CLASS(
-	A, ,
-	(int),
-	(method0)
-	(method1),
-	("n", get_n, set_n)
-	("n1", get_n,));
+  A, ,
+  (int),
+  (method0)
+  (method1),
+  ("n", get_n, set_n)
+  ("n1", get_n, ));
 </code>
 
 Bind class to script engine
