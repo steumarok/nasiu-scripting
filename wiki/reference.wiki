@@ -2,6 +2,8 @@
 
 = Reference =
 
+(under construction, see also example code)
+
 == NASIU_V8W_ADAPT_CLASS ==
 
 <code>
