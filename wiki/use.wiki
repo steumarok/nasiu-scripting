@@ -2,7 +2,14 @@
 
 = Introduction =
 
-Few words, go to the code.
+The Nasiu Scripting framework allow to:
+
+* Use C++ class and functions from Javascript
+* Define new classes and functions in Javascript and use in C++
+* Automatic native types and STL containers (list, map, vector) conversions
+* Catch C++ exception from Javascript and Javascript exception from C++
+
+Now, go to the code.
 
 
 = How to interface C++ and scripting languages =
@@ -32,7 +39,7 @@ NASIU_V8W_ADAPT_CLASS(
 	("n", get_n, set_n)
 	("n1", get_n,));
 
-/*...*/
+...
 
 using namespace nasiu::scripting;
 
@@ -74,6 +81,5 @@ cout << "a3.n=" << a3->get_n() << endl;
 cout << "a3.method0() "; a3->method0(); cout << endl;
 cout << "a3.method1() "; a3->method1(40); cout << endl;
 delete a3;
-
 
 </code>
