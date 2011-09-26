@@ -16,7 +16,7 @@ Now, go to the code.
 
 Full example: http://code.google.com/p/nasiu-scripting/source/browse/trunk/src/V8Wrapper.cpp
 
-<code language="c++">
+<code language="cpp">
 class A
 {
 	int n_;
