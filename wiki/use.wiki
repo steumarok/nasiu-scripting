@@ -1,6 +1,6 @@
 #summary Interfacing C++ and V8 Javascript.
 
-= Introduction =
+= How to interface C++ and scripting languages =
 
 This example show how:
 
@@ -8,8 +8,6 @@ This example show how:
   * Class instantiation and usage
   * Derive classes and override functions in Javascript
   * Exception handling
-
-= How to interface C++ and scripting languages =
 
 Full source: http://code.google.com/p/nasiu-scripting/source/browse/trunk/src/V8Wrapper.cpp
 
