@@ -1,16 +1,13 @@
-#summary One-sentence summary of this page.
+#summary Interfacing C++ and V8 Javascript.
 
 = Introduction =
 
-The Nasiu Scripting framework allow to:
+This example show how:
 
-  * Use C++ class and functions from Javascript
-  * Define new classes and functions in Javascript and use in C++
-  * Automatic native types and STL containers (list, map, vector) conversions
-  * Catch C++ exception from Javascript and Javascript exception from C++
-
-Now, go to the code.
-
+  * Bind classes and functions to script engine
+  * Class instantiation and usage
+  * Derive classes and override functions in Javascript
+  * Exception handling
 
 = How to interface C++ and scripting languages =
 
