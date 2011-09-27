@@ -26,12 +26,50 @@
 #if !defined(__NASIU__SCRIPTING__V8W__FUNCTION_HPP__)
 #define __NASIU__SCRIPTING__V8W__FUNCTION_HPP__
 
+#include <boost/preprocessor/enum.hpp>
+#include <boost/preprocessor/enum_params.hpp>
+#include <boost/preprocessor/repeat.hpp>
+#include <boost/preprocessor/repeat_from_to.hpp>
+#include <boost/preprocessor/comma_if.hpp>
+#include <boost/preprocessor/if.hpp>
+#include <boost/preprocessor/expand.hpp>
+
 #include <nasiu/scripting/function.hpp>
 #include <nasiu/scripting/v8w/tags.hpp>
 #include <nasiu/scripting/v8w/js_caller.hpp>
 #include <nasiu/scripting/v8w/js_to_native.hpp>
 #include <nasiu/scripting/v8w/native_to_js.hpp>
 #include <nasiu/scripting/v8w/invocation_scope.hpp>
+
+#define NASIU_V8W_FUNCTION_CALL_MAX_PARAMS 10
+
+#define NASIU_V8W_FUNCTION_CALL() \
+	BOOST_PP_REPEAT( 														\
+			NASIU_V8W_FUNCTION_CALL_MAX_PARAMS,								\
+			NASIU_V8W_FUNCTION_CALL_R, 										\
+			~)																\
+	/***/
+
+#define NASIU_V8W_FUNCTION_CALL_ARGS(z, i, unused)							\
+	v8w::native_to_js<BOOST_PP_CAT(P, i)>()(BOOST_PP_CAT(p, i), scope)		\
+	/***/
+
+#define NASIU_V8W_FUNCTION_CALL_R(z, n, unused)								\
+	template<typename R BOOST_PP_COMMA_IF(n) 								\
+		BOOST_PP_ENUM_PARAMS(n, typename P)>								\
+	R call(BOOST_PP_ENUM_BINARY_PARAMS(n, P, p))							\
+	{																		\
+		using namespace v8;													\
+		HandleScope handle_scope;											\
+		v8w::invocation_scope scope(*engine_);								\
+		Handle<Value> args[] =												\
+		{																	\
+				BOOST_PP_ENUM(n, NASIU_V8W_FUNCTION_CALL_ARGS, ~) 			\
+		};																	\
+		return v8w::js_caller<R>()(*engine_, function_, function_, n, args);\
+	}																		\
+	/***/
+
 
 namespace nasiu { namespace scripting {
 
@@ -58,76 +96,7 @@ public:
 		return function_;
 	}
 
-	template<typename R>
-	R
-	call()
-	{
-		using namespace v8;
-
-		HandleScope handle_scope;
-
-		Handle<Value> args[] = {};
-		return v8w::js_caller<R>()(*engine_, function_, function_, 0, args);
-	}
-
-	template<typename R, typename P1>
-	R
-	call(
-			P1 p1)
-	{
-		using namespace v8;
-
-		HandleScope handle_scope;
-
-		v8w::invocation_scope scope(*engine_);
-
-		Handle<Value> args[] =
-		{
-				v8w::native_to_js<P1>()(p1, scope)
-		};
-		return v8w::js_caller<R>()(*engine_, function_, function_, 1, args);
-	}
-
-	template<typename R, typename P1, typename P2>
-	R
-	call(
-			P1 p1,
-			P2 p2)
-	{
-		using namespace v8;
-
-		HandleScope handle_scope;
-
-		v8w::invocation_scope scope(*engine_);
-
-		Handle<Value> args[] =
-		{
-				v8w::native_to_js<P1>()(p1, scope),
-				v8w::native_to_js<P2>()(p2, scope)
-		};
-		return v8w::js_caller<R>()(*engine_, function_, function_, 2, args);
-	}
-
-	template<typename P1, typename P2>
-	void
-	call(
-			P1 p1,
-			P2 p2)
-	{
-		using namespace v8;
-
-		HandleScope handle_scope;
-
-		v8w::invocation_scope scope(*engine_);
-
-		Handle<Value> args[] =
-		{
-				v8w::native_to_js<P1>()(p1, scope),
-				v8w::native_to_js<P2>()(p2, scope)
-		};
-		v8w::js_caller<void>()(*engine_, function_, function_, 2, args);
-	}
-
+	NASIU_V8W_FUNCTION_CALL()
 };
 
 namespace v8w {
