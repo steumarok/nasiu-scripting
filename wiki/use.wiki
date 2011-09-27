@@ -18,7 +18,7 @@ Full example: http://code.google.com/p/nasiu-scripting/source/browse/trunk/src/V
 
 Class definition
 
-<code language="cpp">
+{{{
 class A
 {
   int n_;
@@ -33,9 +33,15 @@ public:
   int get_n() const;
   void set_n(int n);
 };
-</code>
 
-Adapter declaration
+int func1(A* a)
+{
+  std::cout << "func1 " << a->get_n() << std::endl;
+  return a->get_n();
+}
+}}}
+
+Adapt class for script:
 <code language="cpp">
 NASIU_V8W_ADAPT_CLASS(
   A, ,
@@ -46,51 +52,57 @@ NASIU_V8W_ADAPT_CLASS(
   ("n1", get_n, ));
 </code>
 
-Bind class to script engine
-<code language="cpp">
+Bind class and function to script engine:
+{{{
 using namespace nasiu::scripting;
 
 script_engine<tags::v8w> se;
 se.bind_class<A>();
-</code>
+se.bind_function("func1", func1);
+}}}
 
-Instantiate A from javascript and use in from C++.
-<code language="cpp">
+Instantiate A from Javascript and use in C++.
+{{{
 A* a1 = se.eval<A*>("new A(20)");
-cout << "a1.n=" << a1->get_n() << endl;
-</code>
 
-Return the class from javascript, instantiate, use, delete in C++ 
-<code language="cpp">
+cout << "a1.n=" << a1->get_n() << endl;
+}}}
+
+Return the class from Javascript, instantiate, use, delete in C++:
+{{{
 class_type<tags::v8w, A> type_A = se.eval<class_type<tags::v8w, A> >("A");
+
 A* a2 = type_A.new_instance(30);
 cout << "a2.n=" << a2->get_n() << endl;
-delete a2;
-</code>
 
-Override some methods of A in Javascript, return the class and use in in C++
-<code language="cpp">
+delete a2;
+}}}
+
+Override some functions of A in Javascript, return the class and use in C++:
+{{{
 class_type<tags::v8w, A> type_ExtA = se.eval<class_type<tags::v8w, A> >(
-	"ExtA = function(n)"
-	"{"
-	"	var base = new A(n);"
-	"	base.__proto__ = ExtA.prototype;"
-	"	return base;"
-	"};"
-	"ExtA.prototype.__proto__ = A.prototype;"
-	"ExtA.prototype.method1 = function(n)"
-	"{"
-	"	A.prototype.method1.call(this, n*n);"
-	"};"
-	"ExtA.prototype.method0 = function(n)"
-	"{"
-	"	A.prototype.method0.call(this);"
-	"};"
-	"ExtA"
+  "ExtA = function(n)"
+  "{"
+  "  var base = new A(n);"
+  "  base.__proto__ = ExtA.prototype;"
+  "  return base;"
+  "};"
+  "ExtA.prototype.__proto__ = A.prototype;"
+  "ExtA.prototype.method1 = function(n)"
+  "{"
+  "  A.prototype.method1.call(this, n*n);"
+  "};"
+  "ExtA.prototype.method0 = function(n)"
+  "{"
+  "  A.prototype.method0.call(this);"
+  "};"
+  "ExtA"
 );
+
 A* a3 = type_ExtA.new_instance(40);
 cout << "a3.n=" << a3->get_n() << endl;
 cout << "a3.method0() "; a3->method0(); cout << endl;
 cout << "a3.method1() "; a3->method1(40); cout << endl;
+
 delete a3;
-</code>
+}}}
