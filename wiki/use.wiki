@@ -9,7 +9,7 @@ This example show how:
   * Derive classes and override functions in Javascript
   * Exception handling
 
-Full source: http://code.google.com/p/nasiu-scripting/source/browse/trunk/src/V8Wrapper.cpp
+Full source: http://code.google.com/p/nasiu-scripting/source/browse/trunk/examples/nasiu/scripting/v8w/example1.cpp
 
 == Classes and functions binding ==
 Our example class and functions definition:
