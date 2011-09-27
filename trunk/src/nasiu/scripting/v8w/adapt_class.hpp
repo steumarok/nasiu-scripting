@@ -143,95 +143,147 @@ struct class_method<Class const, N>
 			NASIU_V8W_MAX_CALL_ADAPTER_CNT, 								\
 			NASIU_V8W_DEF_CALL_ADAPTER_T, 									\
 			(fn, cseq_size)) 												\
-		typedef typename boost::mpl::if_< 									\
-			boost::is_abstract<base_type>, 									\
-			dispatcher_b_t<param_size::value, base_type>, 					\
-			dispatcher_a_t<param_size::value, 								\
-				base_type> >::type dispatcher; 								\
+		typedef dispatcher_a_t<param_size::value, base_type> dispatcher_a;  \
+		typedef dispatcher_b_t<param_size::value, base_type> dispatcher_b;  \
 	} 																		\
 	/***/
 
 
-#define NASIU_V8W_DEF_CALL_ADAPTER_T(z, i, data /*(fn,n-ctor-params)*/) \
-	template<typename Base> \
-	struct dispatcher_a_t< BOOST_PP_INC(i), Base > : virtual public Base \
-	{	\
-		dispatcher_a_t(BOOST_PP_REPEAT_ ## z(  \
-				BOOST_PP_TUPLE_ELEM(2, 1, data), \
-				NASIU_V8W_CTOR_PARAM_DECL, \
-				Base)) \
-		: Base(BOOST_PP_REPEAT_ ## z(BOOST_PP_TUPLE_ELEM(2, 1, data), NASIU_V8W_CTOR_PARAM_USE, ~)) {} \
-		\
-		typedef typename boost::mpl::begin<param_types>::type it0; \
-		BOOST_PP_REPEAT_ ## z(i, NASIU_V8W_PARAM_TYPE_DECL, ~) \
-		\
-		rtype BOOST_PP_TUPLE_ELEM(2, 0, data)(BOOST_PP_REPEAT_ ## z(i, NASIU_V8W_PARAM_LIST, _)) \
-		{ \
-			using namespace v8; \
-			HandleScope handle_scope; \
-			Persistent<Object> object = get_object(); \
-			invocation_scope scope(get_engine()); \
-			Local<Object> prototype = object->GetPrototype().As<Object>(); \
-			Local<Function> function = prototype->Get(String::New(BOOST_STRINGIZE(BOOST_PP_TUPLE_ELEM(2, 0, data)))).As<Function>(); \
-			Handle<Value> args[] = { BOOST_PP_REPEAT_ ## z(i, NASIU_V8W_PARAM_TO_JS, ~) };\
-			return js_caller<rtype>()(get_engine(), function, object, sizeof(args) / sizeof(Handle<Value>), args);\
-		} \
-		\
-		rtype BOOST_PP_CAT(BOOST_PP_TUPLE_ELEM(2, 0, data),_base)(BOOST_PP_REPEAT_ ## z(i, NASIU_V8W_PARAM_LIST, _)) \
-		{ \
-			return Base::BOOST_PP_TUPLE_ELEM(2, 0, data)(BOOST_PP_REPEAT_ ## z(i, NASIU_V8W_PARAM_USE, ~)); \
-		} \
-		\
-		typedef BOOST_TYPEOF(&dispatcher_a_t< BOOST_PP_INC(i) BOOST_PP_COMMA() Base >::BOOST_PP_TUPLE_ELEM(2, 0, data)) pmf_type; \
-		static pmf_type get_pmf() { return &dispatcher_a_t< BOOST_PP_INC(i) BOOST_PP_COMMA() Base >::BOOST_PP_TUPLE_ELEM(2, 0, data); } \
-		static pmf_type get_base_pmf() { return &dispatcher_a_t< BOOST_PP_INC(i) BOOST_PP_COMMA() Base >::BOOST_PP_CAT(BOOST_PP_TUPLE_ELEM(2, 0, data),_base); } \
-		\
-		virtual v8::Persistent<v8::Object> get_object() const = 0;\
-		virtual engine_base& get_engine() const = 0;\
-		\
-	}; \
-	template<typename Base> \
-	struct dispatcher_b_t< BOOST_PP_INC(i), Base > : virtual public Base \
-	{	\
-		dispatcher_b_t(BOOST_PP_REPEAT_ ## z(  \
-				BOOST_PP_TUPLE_ELEM(2, 1, data), \
-				NASIU_V8W_CTOR_PARAM_DECL, \
-				Base)) \
-		: Base(BOOST_PP_REPEAT_ ## z(BOOST_PP_TUPLE_ELEM(2, 1, data), NASIU_V8W_CTOR_PARAM_USE, ~)) {} \
-		\
-		typedef typename boost::mpl::begin<param_types>::type it0; \
-		BOOST_PP_REPEAT_ ## z(i, NASIU_V8W_PARAM_TYPE_DECL, ~) \
-		\
-		rtype BOOST_PP_TUPLE_ELEM(2, 0, data)(BOOST_PP_REPEAT_ ## z(i, NASIU_V8W_PARAM_LIST, _)) \
-		{ \
-			using namespace v8; \
-			HandleScope handle_scope; \
-			Persistent<Object> object = get_object(); \
-			invocation_scope scope(get_engine()); \
-			Local<Object> prototype = object->GetPrototype().As<Object>(); \
-			Local<Function> function = prototype->Get(String::New(BOOST_STRINGIZE(BOOST_PP_TUPLE_ELEM(2, 0, data)))).As<Function>(); \
-			Handle<Value> args[] = { BOOST_PP_REPEAT_ ## z(i, NASIU_V8W_PARAM_TO_JS, ~) };\
-			return js_caller<rtype>()(get_engine(), function, object, sizeof(args) / sizeof(Handle<Value>), args);\
-		} \
-		\
-		typedef BOOST_TYPEOF(&dispatcher_b_t< BOOST_PP_INC(i) BOOST_PP_COMMA() Base >::BOOST_PP_TUPLE_ELEM(2, 0, data)) pmf_type; \
-		static pmf_type get_pmf() { return &dispatcher_b_t< BOOST_PP_INC(i) BOOST_PP_COMMA() Base >::BOOST_PP_TUPLE_ELEM(2, 0, data); } \
-		static pmf_type get_base_pmf() { return 0; } \
-		\
-		virtual v8::Persistent<v8::Object> get_object() const = 0;\
-		virtual engine_base& get_engine() const = 0;\
-		\
-	}; \
+#define NASIU_V8W_DEF_CALL_ADAPTER_T(z, i, data /*(fn,cseq-size)*/) 		\
+	template<typename Base> 												\
+	struct dispatcher_a_t< BOOST_PP_INC(i), Base > 							\
+		: virtual public Base 												\
+	{																		\
+		dispatcher_a_t(BOOST_PP_REPEAT_ ## z(  								\
+				BOOST_PP_TUPLE_ELEM(2, 1, data), 							\
+				NASIU_V8W_CTOR_PARAM_DECL, 									\
+				Base)) 														\
+		: Base(BOOST_PP_REPEAT_ ## z(BOOST_PP_TUPLE_ELEM(2, 1, data),		\
+				NASIU_V8W_CTOR_PARAM_USE, ~)) {} 							\
+																			\
+		typedef typename boost::mpl::begin<param_types>::type it0; 			\
+		BOOST_PP_REPEAT_ ## z(i, NASIU_V8W_PARAM_TYPE_DECL, ~) 				\
+																			\
+		rtype BOOST_PP_TUPLE_ELEM(2, 0, data)(								\
+				BOOST_PP_REPEAT_ ## z(i, NASIU_V8W_PARAM_LIST, ~)) 			\
+		{ 																	\
+			using namespace v8; 											\
+			HandleScope handle_scope; 										\
+			Persistent<Object> object = get_object(); 						\
+			invocation_scope scope(get_engine()); 							\
+			Local<Object> prototype = object->GetPrototype().As<Object>(); 	\
+			Local<Function> function = 										\
+					prototype->Get(String::New(								\
+							BOOST_STRINGIZE(								\
+									BOOST_PP_TUPLE_ELEM(2, 0, data))))		\
+					.As<Function>(); 										\
+			Handle<Value> args[] = {										\
+					BOOST_PP_REPEAT_ ## z(i, NASIU_V8W_PARAM_TO_JS, ~) };	\
+			return js_caller<rtype>()(										\
+					get_engine(), 											\
+					function, 												\
+					object, 												\
+					sizeof(args) / sizeof(Handle<Value>), 					\
+					args);													\
+		} 																	\
+																			\
+		rtype BOOST_PP_CAT(BOOST_PP_TUPLE_ELEM(2, 0, data),_base)			\
+			(BOOST_PP_REPEAT_ ## z(i, NASIU_V8W_PARAM_LIST, _)) 			\
+		{ 																	\
+			return Base::BOOST_PP_TUPLE_ELEM(2, 0, data)					\
+				(BOOST_PP_REPEAT_ ## z(i, NASIU_V8W_PARAM_USE, ~)); 		\
+		} 																	\
+																			\
+		typedef BOOST_TYPEOF(&dispatcher_a_t<								\
+					BOOST_PP_INC(i) BOOST_PP_COMMA() Base >					\
+				::BOOST_PP_TUPLE_ELEM(2, 0, data)) pmf_type; 				\
+		static pmf_type get_pmf()											\
+		{ 																	\
+			return &dispatcher_a_t<											\
+						BOOST_PP_INC(i) BOOST_PP_COMMA() Base >				\
+					::BOOST_PP_TUPLE_ELEM(2, 0, data); 						\
+		}												 					\
+		static pmf_type get_base_pmf()										\
+		{ 																	\
+			return &dispatcher_a_t<											\
+						BOOST_PP_INC(i) BOOST_PP_COMMA() Base >				\
+					::BOOST_PP_CAT(BOOST_PP_TUPLE_ELEM(2, 0, data),_base); 	\
+		} 																	\
+																			\
+		virtual v8::Persistent<v8::Object> get_object() const = 0;			\
+		virtual engine_base& get_engine() const = 0;						\
+	}; 																		\
+	template<typename Base> 												\
+	struct dispatcher_b_t< BOOST_PP_INC(i), Base > 							\
+		: virtual public Base 												\
+	{																		\
+		dispatcher_b_t(BOOST_PP_REPEAT_ ## z(  								\
+				BOOST_PP_TUPLE_ELEM(2, 1, data), 							\
+				NASIU_V8W_CTOR_PARAM_DECL, 									\
+				Base)) 														\
+		: Base(BOOST_PP_REPEAT_ ## z(BOOST_PP_TUPLE_ELEM(2, 1, data),		\
+				NASIU_V8W_CTOR_PARAM_USE, ~)) {} 							\
+																			\
+		typedef typename boost::mpl::begin<param_types>::type it0; 			\
+		BOOST_PP_REPEAT_ ## z(i, NASIU_V8W_PARAM_TYPE_DECL, ~) 				\
+																			\
+		rtype BOOST_PP_TUPLE_ELEM(2, 0, data)(								\
+				BOOST_PP_REPEAT_ ## z(i, NASIU_V8W_PARAM_LIST, ~)) 			\
+		{ 																	\
+			using namespace v8; 											\
+			HandleScope handle_scope; 										\
+			Persistent<Object> object = get_object(); 						\
+			invocation_scope scope(get_engine()); 							\
+			Local<Object> prototype = object->GetPrototype().As<Object>(); 	\
+			Local<Function> function = 										\
+					prototype->Get(String::New(								\
+							BOOST_STRINGIZE(								\
+									BOOST_PP_TUPLE_ELEM(2, 0, data))))		\
+					.As<Function>(); 										\
+			Handle<Value> args[] = {										\
+					BOOST_PP_REPEAT_ ## z(i, NASIU_V8W_PARAM_TO_JS, ~) };	\
+			return js_caller<rtype>()(										\
+					get_engine(), 											\
+					function, 												\
+					object, 												\
+					sizeof(args) / sizeof(Handle<Value>), 					\
+					args);													\
+		} 																	\
+																			\
+		rtype BOOST_PP_CAT(BOOST_PP_TUPLE_ELEM(2, 0, data),_base)			\
+			(BOOST_PP_REPEAT_ ## z(i, NASIU_V8W_PARAM_LIST, _)) 			\
+		{ 																	\
+			return Base::BOOST_PP_TUPLE_ELEM(2, 0, data)					\
+				(BOOST_PP_REPEAT_ ## z(i, NASIU_V8W_PARAM_USE, ~)); 		\
+		} 																	\
+																			\
+		typedef BOOST_TYPEOF(&dispatcher_b_t<								\
+					BOOST_PP_INC(i) BOOST_PP_COMMA() Base >					\
+				::BOOST_PP_TUPLE_ELEM(2, 0, data)) pmf_type; 				\
+		static pmf_type get_pmf()											\
+		{ 																	\
+			return &dispatcher_b_t<											\
+						BOOST_PP_INC(i) BOOST_PP_COMMA() Base >				\
+					::BOOST_PP_TUPLE_ELEM(2, 0, data); 						\
+		}												 					\
+		static pmf_type get_base_pmf()										\
+		{ 																	\
+			return 0;														\
+		} 																	\
+																			\
+		virtual v8::Persistent<v8::Object> get_object() const = 0;			\
+		virtual engine_base& get_engine() const = 0;						\
+	}; 																		\
 	/***/
 
 
-#define NASIU_V8W_ADAPT_CLASS(cl_name, parent, cseq, mseq, aseq)                     \
-    NASIU_V8W_ADAPT_CLASS_I(                                                \
-        cl_name,                    \
-        parent, \
-        cseq,   														\
-		BOOST_PP_CAT(NASIU_V8W_ADAPT_CLASS_M_X mseq, 0),                \
-		BOOST_PP_CAT(NASIU_V8W_ADAPT_CLASS_A_X aseq, 0))                \
+#define NASIU_V8W_ADAPT_CLASS(cl_name, parent, cseq, mseq, aseq)			\
+    NASIU_V8W_ADAPT_CLASS_I(												\
+        cl_name,                    										\
+        parent, 															\
+        cseq,   															\
+		BOOST_PP_CAT(NASIU_V8W_ADAPT_CLASS_M_X mseq, 0),					\
+		BOOST_PP_CAT(NASIU_V8W_ADAPT_CLASS_A_X aseq, 0))					\
     /***/
 
 #define NASIU_V8W_ADAPT_CLASS_M_X(x) ((x)) NASIU_V8W_ADAPT_CLASS_M_Y
@@ -247,123 +299,202 @@ struct class_method<Class const, N>
 // NASIU_V8W_ADAPT_CLASS_I generates the overarching structure and uses
 // SEQ_FOR_EACH_I to generate the "linear" substructures.
 
-#define NASIU_V8W_ADAPT_CLASS_I(cl_name, parent, cseq, mseq, aseq)						        \
-    namespace nasiu { namespace scripting { namespace v8w {                        \
-        template <>                                                             \
-        struct class_info<cl_name> { 											\
-        	typedef boost::mpl::int_<BOOST_PP_SEQ_SIZE(mseq)> method_count;         \
-        	typedef boost::mpl::int_<BOOST_PP_SEQ_SIZE(aseq)> accessor_count;         \
-    		BOOST_PP_SEQ_FOR_EACH_I(NASIU_V8W_CTOR_PARAM_TYPE_DECL, ~, cseq); \
-        	typedef cl_name (*ctor_sig)(engine_base* e, v8::Persistent<v8::Object> BOOST_PP_SEQ_FOR_EACH_I(NASIU_V8W_CTOR_PARAM_SIG_DECL, ~, cseq));\
-        	static const char* get_name() { return BOOST_STRINGIZE(cl_name); }  \
-    		typedef BOOST_PP_IF(		\
-    			BOOST_PP_IS_EMPTY(parent),	\
-    			boost::mpl::void_,		\
-    			parent) parent_class; \
-		}; 			        													\
-        BOOST_PP_SEQ_FOR_EACH_I(NASIU_V8W_ADAPT_CLASS_M, (cl_name, BOOST_PP_SEQ_SIZE(cseq)), mseq)             \
-        BOOST_PP_SEQ_FOR_EACH_I(NASIU_V8W_ADAPT_CLASS_A, cl_name, aseq)             \
-		template <>                                                                 \
-		class method_dispatcher<cl_name> : public method_dispatcher_base                                       \
-			BOOST_PP_SEQ_FOR_EACH_I(NASIU_V8W_METHOD_DISPATCHER_INHERITANCE, cl_name, mseq)             \
-		{   \
-			engine_base& engine_;\
-			v8::Persistent<v8::Object> object_; \
-			\
-		public:  \
-			\
-			method_dispatcher(engine_base* e, v8::Persistent<v8::Object> object BOOST_PP_COMMA_IF(BOOST_PP_SEQ_SIZE(cseq)) \
-					BOOST_PP_REPEAT(BOOST_PP_SEQ_SIZE(cseq), NASIU_V8W_CTOR_PARAM_DECL, cl_name)) \
-					: cl_name(BOOST_PP_REPEAT(BOOST_PP_SEQ_SIZE(cseq), NASIU_V8W_CTOR_PARAM_USE, ~)) \
-					  	BOOST_PP_SEQ_FOR_EACH_I(NASIU_V8W_METHOD_DISPATCHER_INIT, (cl_name,BOOST_PP_SEQ_SIZE(cseq)), mseq) \
-					  , engine_(*e), object_(object) \
-			{\
-				\
-			}\
-			\
-			~method_dispatcher() \
-			{\
-				using namespace v8; \
-				Context::Scope context_scope(get_engine().get_context()); \
-				if (!object_.IsNearDeath()) object_.Dispose();\
-			} \
-			\
-			v8::Persistent<v8::Object> get_object() const\
-			{ \
-				return object_;\
-			}	\
-			\
-			engine_base& get_engine() const\
-			{ \
-				return engine_;\
-			}	\
-		}; \
-		BOOST_PP_SEQ_FOR_EACH_I(NASIU_V8W_METHOD_DISPATCHER_METHOD_INFO, cl_name, mseq)             \
-    }}}        \
+#define NASIU_V8W_ADAPT_CLASS_I(cl_name, parent, cseq, mseq, aseq)			\
+    namespace nasiu { namespace scripting { namespace v8w {					\
+        template <>															\
+        struct class_info<cl_name> {										\
+        	typedef boost::mpl::int_<BOOST_PP_SEQ_SIZE(mseq)>				\
+					method_count;											\
+        	typedef boost::mpl::int_<BOOST_PP_SEQ_SIZE(aseq)> 				\
+        			accessor_count;											\
+    		BOOST_PP_SEQ_FOR_EACH_I(										\
+    				NASIU_V8W_CTOR_PARAM_TYPE_DECL, ~, cseq); 				\
+        	typedef cl_name (*ctor_sig) 									\
+        			(engine_base* e, v8::Persistent<v8::Object> 			\
+    				 BOOST_PP_SEQ_FOR_EACH_I(								\
+    						 NASIU_V8W_CTOR_PARAM_SIG_DECL, ~, cseq));		\
+        	static const char* get_name() {									\
+    				return BOOST_STRINGIZE(cl_name); }						\
+    		typedef BOOST_PP_IF(											\
+    			BOOST_PP_IS_EMPTY(parent),									\
+    			boost::mpl::void_,											\
+    			parent) parent_class; 										\
+		};																	\
+        BOOST_PP_SEQ_FOR_EACH_I(NASIU_V8W_ADAPT_CLASS_M,					\
+        		(cl_name, BOOST_PP_SEQ_SIZE(cseq)), mseq)					\
+        BOOST_PP_SEQ_FOR_EACH_I(NASIU_V8W_ADAPT_CLASS_A,					\
+        		cl_name, aseq)												\
+        BOOST_PP_REPEAT(BOOST_PP_SEQ_SIZE(mseq),							\
+        		NASIU_V8W_FIND_ABSTRACT,									\
+        		(cl_name, BOOST_PP_SEQ_SIZE(mseq))) 						\
+		template <>															\
+		class method_dispatcher<cl_name>									\
+			: public method_dispatcher_base									\
+			BOOST_PP_SEQ_FOR_EACH_I(										\
+					NASIU_V8W_METHOD_DISPATCHER_INHERITANCE, 				\
+					cl_name, mseq)											\
+		{   																\
+			engine_base& engine_;											\
+			v8::Persistent<v8::Object> object_; 							\
+																			\
+		public:  															\
+																			\
+			method_dispatcher(engine_base* e,								\
+					v8::Persistent<v8::Object> object						\
+					BOOST_PP_COMMA_IF(BOOST_PP_SEQ_SIZE(cseq)) 				\
+					BOOST_PP_REPEAT(BOOST_PP_SEQ_SIZE(cseq),				\
+							NASIU_V8W_CTOR_PARAM_DECL, cl_name)) 			\
+					: cl_name(BOOST_PP_REPEAT(BOOST_PP_SEQ_SIZE(cseq),		\
+							NASIU_V8W_CTOR_PARAM_USE, ~)) 					\
+					  	BOOST_PP_SEQ_FOR_EACH_I(							\
+					  			NASIU_V8W_METHOD_DISPATCHER_INIT,			\
+					  			(cl_name,BOOST_PP_SEQ_SIZE(cseq)), mseq)\
+					  , engine_(*e), object_(object) 						\
+			{																\
+			}																\
+																			\
+			~method_dispatcher() 											\
+			{																\
+				using namespace v8; 										\
+				Context::Scope context_scope(								\
+						get_engine().get_context()); 						\
+				if (!object_.IsNearDeath())									\
+					object_.Dispose();										\
+			} 																\
+																			\
+			v8::Persistent<v8::Object> get_object() const					\
+			{ 																\
+				return object_;												\
+			}																\
+																			\
+			engine_base& get_engine() const									\
+			{ 																\
+				return engine_;												\
+			}																\
+		}; 																	\
+		BOOST_PP_SEQ_FOR_EACH_I(											\
+				NASIU_V8W_METHOD_DISPATCHER_METHOD_INFO, cl_name, mseq)		\
+    }}}        																\
     /***/
 
-#define NASIU_V8W_METHOD_DISPATCHER_METHOD_INFO(r, cl_name, i, xy)                                 \
-	template <> \
-	struct dispatchers<cl_name, i> {  \
-    	typedef BOOST_PP_CAT(BOOST_PP_CAT(adapter_, cl_name),BOOST_PP_CAT(_, i))::dispatcher type;\
-    }; \
+#define NASIU_V8W_FIND_ABSTRACT(z, i, data /*cl_name,cseq-size*/) 			\
+	namespace BOOST_PP_CAT(adapter_, BOOST_PP_TUPLE_ELEM(2, 0, data)) { 	\
+    	struct BOOST_PP_CAT(dummy, i) {};									\
+    	struct BOOST_PP_CAT(test, i) : BOOST_PP_CAT(dummy, i)				\
+				BOOST_PP_REPEAT_FROM_TO(									\
+						0,													\
+						BOOST_PP_DEC(i), 									\
+						NASIU_V8W_FIND_ABSTRACT_INHERITANCE,				\
+						BOOST_PP_TUPLE_ELEM(2, 0, data)) 					\
+				BOOST_PP_REPEAT_FROM_TO(									\
+						BOOST_PP_INC(i), 									\
+						BOOST_PP_TUPLE_ELEM(2, 1, data),					\
+						NASIU_V8W_FIND_ABSTRACT_INHERITANCE,				\
+						BOOST_PP_TUPLE_ELEM(2, 0, data)) 					\
+    	{ 																	\
+    		v8::Persistent<v8::Object> get_object() const { throw 0; }		\
+    		engine_base& get_engine() const { throw 0; }					\
+    	}; 																	\
+    	typedef typename boost::mpl::if_<									\
+    			boost::is_abstract<BOOST_PP_CAT(test, i)>,					\
+    			BOOST_PP_CAT(												\
+    					BOOST_PP_CAT(										\
+    							adapter_, 									\
+    							BOOST_PP_TUPLE_ELEM(2, 0, data)),			\
+    					BOOST_PP_CAT(_, i))::dispatcher_b, 					\
+    			BOOST_PP_CAT(												\
+    					BOOST_PP_CAT(										\
+    							adapter_, 									\
+    							BOOST_PP_TUPLE_ELEM(2, 0, data)),			\
+    					BOOST_PP_CAT(_, i))::dispatcher_a		 			\
+    			>::type BOOST_PP_CAT(dispatcher, i); 										\
+	}																		\
+    /***/
+
+#define NASIU_V8W_FIND_ABSTRACT_INHERITANCE(z, i, cl_name) 					\
+	, public BOOST_PP_CAT(													\
+			BOOST_PP_CAT(adapter_, cl_name),								\
+			BOOST_PP_CAT(_, i)												\
+		)::dispatcher_a														\
+	    /***/
+
+
+#define NASIU_V8W_METHOD_DISPATCHER_METHOD_INFO(r, cl_name, i, xy)			\
+	template <> 															\
+	struct dispatchers<cl_name, i> {										\
+    	typedef BOOST_PP_CAT(adapter_, cl_name)								\
+				::BOOST_PP_CAT(dispatcher, i) type;							\
+    }; 																		\
 	/***/
 
-#define NASIU_V8W_METHOD_DISPATCHER_INHERITANCE(r, cl_name, i, xy)                                 \
-	, public BOOST_PP_CAT(BOOST_PP_CAT(adapter_, cl_name),BOOST_PP_CAT(_, i))  \
-		::dispatcher                                                            \
+#define NASIU_V8W_METHOD_DISPATCHER_INHERITANCE(r, cl_name, i, xy)			\
+	, public BOOST_PP_CAT(adapter_, cl_name)  								\
+		::BOOST_PP_CAT(dispatcher, i)										\
 	/***/
 
-#define NASIU_V8W_METHOD_DISPATCHER_INIT(r, data, i, xy)                                 \
-		, BOOST_PP_CAT(BOOST_PP_CAT(adapter_, BOOST_PP_TUPLE_ELEM(2, 0, data)),BOOST_PP_CAT(_, i))  \
-			::dispatcher(BOOST_PP_REPEAT(BOOST_PP_TUPLE_ELEM(2, 1, data), NASIU_V8W_CTOR_PARAM_USE, ~))     \
+#define NASIU_V8W_METHOD_DISPATCHER_INIT(r, data, i, xy)					\
+		, BOOST_PP_CAT(adapter_, BOOST_PP_TUPLE_ELEM(2, 0, data))			\
+			::BOOST_PP_CAT(dispatcher, i)(									\
+					BOOST_PP_REPEAT(										\
+							BOOST_PP_TUPLE_ELEM(2, 1, data), 				\
+							NASIU_V8W_CTOR_PARAM_USE, ~))     				\
 	/***/
 
-#define NASIU_V8W_ADAPT_CLASS_M(r, data, i, xy)                                 \
-	template <>                                                                 \
-	struct class_method<BOOST_PP_TUPLE_ELEM(2, 0, data), i>                                                \
-	{																			\
-		static const char* get_name() { return BOOST_STRINGIZE(BOOST_PP_TUPLE_ELEM(1, 0, xy)); }                    \
-		typedef BOOST_TYPEOF(& BOOST_PP_TUPLE_ELEM(2, 0, data) :: BOOST_PP_TUPLE_ELEM(1, 0, xy)) type;    	\
-		static type get_pmf()                                          \
-		{                                                                       \
-			return &BOOST_PP_TUPLE_ELEM(2, 0, data)::BOOST_PP_TUPLE_ELEM(1, 0, xy);  				 		\
-		};                                                                      \
-	};                                                                          \
-	NASIU_V8W_CALL_ADAPTER(\
-			BOOST_PP_TUPLE_ELEM(2, 0, data), /*cl_name*/ \
-			BOOST_PP_TUPLE_ELEM(1, 0, xy),   /*method_name*/ \
-			BOOST_PP_TUPLE_ELEM(2, 1, data), /*cseq-size*/	\
-			i); \
+#define NASIU_V8W_ADAPT_CLASS_M(r, data, i, xy)								\
+	template <>																\
+	struct class_method<BOOST_PP_TUPLE_ELEM(2, 0, data), i>					\
+	{																		\
+		static const char* get_name()										\
+		{ 																	\
+			return BOOST_STRINGIZE(BOOST_PP_TUPLE_ELEM(1, 0, xy)); 			\
+		}																	\
+		typedef BOOST_TYPEOF(& BOOST_PP_TUPLE_ELEM(2, 0, data)				\
+				::BOOST_PP_TUPLE_ELEM(1, 0, xy)) type;    					\
+		static type get_pmf()                                          		\
+		{																	\
+			return &BOOST_PP_TUPLE_ELEM(2, 0, data)							\
+					::BOOST_PP_TUPLE_ELEM(1, 0, xy);  				 		\
+		};																	\
+	};																		\
+	NASIU_V8W_CALL_ADAPTER(													\
+			BOOST_PP_TUPLE_ELEM(2, 0, data), /*cl_name*/ 					\
+			BOOST_PP_TUPLE_ELEM(1, 0, xy),   /*method_name*/ 				\
+			BOOST_PP_TUPLE_ELEM(2, 1, data), /*cseq-size*/					\
+			i); 															\
 	/***/
 
-#define NASIU_V8W_ADAPT_CLASS_A(r, cl_name, i, xy)                                 \
-	template <>                                                                 \
-	struct class_accessor<cl_name, i>                                                \
-	{																			\
-		static const char* get_name() { return BOOST_PP_TUPLE_ELEM(3, 0, xy); }                 \
-		typedef BOOST_TYPEOF(&cl_name::BOOST_PP_TUPLE_ELEM(3, 1, xy)) getter_type;    	\
-		static getter_type get_getter_pmf()                                          \
-		{                                                                       \
-			return &cl_name::BOOST_PP_TUPLE_ELEM(3, 1, xy);  				 		\
-		};                                                                      \
-		BOOST_PP_IF(		\
-			BOOST_PP_IS_EMPTY(BOOST_PP_TUPLE_ELEM(3, 2, xy)),	\
-			NASIU_V8W_ADAPT_CLASS_A_NO_SETTER(cl_name),		\
-			NASIU_V8W_ADAPT_CLASS_A_SETTER(cl_name, BOOST_PP_TUPLE_ELEM(3, 2, xy))) \
-	};                                                                          \
+#define NASIU_V8W_ADAPT_CLASS_A(r, cl_name, i, xy)							\
+	template <>																\
+	struct class_accessor<cl_name, i>										\
+	{																		\
+		static const char* get_name() 										\
+		{ 																	\
+			return BOOST_PP_TUPLE_ELEM(3, 0, xy);							\
+		}																	\
+		typedef BOOST_TYPEOF(&cl_name::BOOST_PP_TUPLE_ELEM(3, 1, xy)) 		\
+				getter_type;    											\
+		static getter_type get_getter_pmf()									\
+		{																	\
+			return &cl_name::BOOST_PP_TUPLE_ELEM(3, 1, xy);					\
+		}																	\
+		BOOST_PP_IF(														\
+			BOOST_PP_IS_EMPTY(BOOST_PP_TUPLE_ELEM(3, 2, xy)),				\
+			NASIU_V8W_ADAPT_CLASS_A_NO_SETTER(cl_name),						\
+			NASIU_V8W_ADAPT_CLASS_A_SETTER(cl_name, 						\
+					BOOST_PP_TUPLE_ELEM(3, 2, xy))) 						\
+	};																		\
 	/***/
 
-#define NASIU_V8W_ADAPT_CLASS_A_SETTER(cl_name, s) \
-	typedef BOOST_TYPEOF(&cl_name::s) setter_type;    	\
-	static setter_type get_setter_pmf()                                          \
-	{                                                                       \
-		return &cl_name::s;  				 		\
-	};                                                                      \
+#define NASIU_V8W_ADAPT_CLASS_A_SETTER(cl_name, s) 							\
+	typedef BOOST_TYPEOF(&cl_name::s) setter_type;    						\
+	static setter_type get_setter_pmf()										\
+	{																		\
+		return &cl_name::s;													\
+	};																		\
 	/***/
 
-#define NASIU_V8W_ADAPT_CLASS_A_NO_SETTER(cl_name) \
-	typedef boost::mpl::false_ setter_type;    	\
+#define NASIU_V8W_ADAPT_CLASS_A_NO_SETTER(cl_name) 							\
+	typedef boost::mpl::false_ setter_type;    								\
 	/***/
 
-#endif /* __NASIU__SCRIPTING__V8W__ADAPTER_CLASS_HPP__ */
+#endif /* __NASIU__SCRIPTING__V8W__ADAPT_CLASS_HPP__ */
