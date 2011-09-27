@@ -61,6 +61,18 @@ se.bind_class<A>();
 se.bind_function("func1", func1);
 }}}
 
+Assign script scope variables:
+{{{
+se.set("var1", "var1-content");
+se.set("var2", 10000);
+se.set("var3", new A(84));
+}}}
+
+Use the function _func1_ and a script variable:
+{{{
+se.exec("func1(new A(var2))");
+}}}
+
 Instantiate A from Javascript and use in C++.
 {{{
 A* a1 = se.eval<A*>("new A(20)");
@@ -105,4 +117,22 @@ cout << "a3.method0() "; a3->method0(); cout << endl;
 cout << "a3.method1() "; a3->method1(40); cout << endl;
 
 delete a3;
+}}}
+
+Define a Javascript function that throw a exception and catch it in C++:
+{{{
+function<tags::v8w> js_func = se.eval<function<tags::v8w> >(
+  "(function (a, b)"
+  "{"
+  "  throw a + b;"
+  "})"
+);
+try
+{
+  js_func.call<void>(10, 30);
+}
+catch (script_exception& e)
+{
+  cout << "js_func exception: " << e.what() << endl;
+}
 }}}
