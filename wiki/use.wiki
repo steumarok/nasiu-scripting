@@ -16,7 +16,7 @@ Now, go to the code.
 
 Full example: http://code.google.com/p/nasiu-scripting/source/browse/trunk/src/V8Wrapper.cpp
 
-Class definition
+Our example class and functions definition:
 
 {{{
 class A
@@ -135,4 +135,24 @@ catch (script_exception& e)
 {
   cout << "js_func exception: " << e.what() << endl;
 }
+}}}
+
+Catch C++ exceptions from Javascript:
+{{{
+void func2(int n)
+{
+  throw "native exception";
+}
+se.bind_function("func2", func2);
+
+se.exec(
+  "try "
+  "{"
+  "	func2(20);"
+  "}"
+  "catch (e)"
+  "{"
+  "  /* ... */"
+  "};"
+);
 }}}
