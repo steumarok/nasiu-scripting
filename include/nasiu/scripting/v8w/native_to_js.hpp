@@ -195,6 +195,18 @@ struct native_to_js<char*>
 };
 
 template<>
+struct native_to_js<const char*>
+{
+	v8::Handle<v8::Value>
+	operator()(
+			const char* from,
+			invocation_scope& scope)
+	{
+		return v8::String::New(from);
+	}
+};
+
+template<>
 struct native_to_js<std::tm>
 {
 	v8::Handle<v8::Value>

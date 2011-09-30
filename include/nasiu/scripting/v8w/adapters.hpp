@@ -72,10 +72,6 @@ struct method_binder
 
 	    invocation_scope scope(adapter->get_engine());
 
-	    //HandleScope handle_scope;
-
-	    //Context::Scope context_scope(adapter->get_engine().get_context());
-
 	    //
 	    // If the prototype of the callee is equal to prototype defined by class_adapter,
 	    // we are on C++ side.
@@ -83,7 +79,6 @@ struct method_binder
    		Handle<FunctionTemplate> ft = adapter->get_function_template();
    		Handle<Function> fn = ft->GetFunction();
    		Local<Value> p = fn->GetPrototype();
-//   		if (disp && args.Callee()->GetPrototype()->Equals(ft->GetFunction()->GetPrototype()))
    		if (disp && args.Callee()->GetPrototype()->Equals(p))
    		{
    	   		//
@@ -95,7 +90,8 @@ struct method_binder
 
    		    if (base_pmf == 0)
    		    {
-   		    	throw abstract_call_exception();
+   		    	std::string message(std::string(class_method<T, I>::get_name()) + " is abstract");
+   		    	return ThrowException(String::New(message.c_str()));
    		    }
    		    else
    		    {
@@ -312,12 +308,12 @@ public:
 
 	v8::Handle<v8::Object>
 	wrap(
-			T* obj,
+			const T* obj,
 			bool weak)
 	{
 		using namespace v8;
 
-		method_dispatcher<T>* disp = dynamic_cast<method_dispatcher<T>*>(obj);
+		const method_dispatcher<T>* disp = dynamic_cast<const method_dispatcher<T>*>(obj);
 
 		if (disp)
 		{
@@ -327,7 +323,7 @@ public:
 		{
 			Handle<FunctionTemplate> function_template = get_function_template();
 			Handle<Function> function = function_template->GetFunction();
-			Handle<Value> param = External::New(obj);
+			Handle<Value> param = External::New((void*)obj);
 			Handle<Object> object = function->NewInstance(1, &param);
 
 			Persistent<Object> persistent_object = Persistent<Object>::New(object);
@@ -336,7 +332,7 @@ public:
 
 			if (weak)
 			{
-				persistent_object.MakeWeak(obj, weak_callback);
+				persistent_object.MakeWeak((void*)obj, weak_callback);
 			}
 
 			return persistent_object;
@@ -475,8 +471,8 @@ private:
 	{
 		using namespace v8;
 
-		function_adapter* adapter = static_cast<function_adapter*>(External::Unwrap(args.Data()));
-		//F func = (F)External::Unwrap(args.Data());
+		function_adapter* adapter =
+				static_cast<function_adapter*>(External::Unwrap(args.Data()));
 
 		invocation_scope scope(adapter->get_engine());
 

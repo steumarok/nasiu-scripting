@@ -54,7 +54,7 @@ namespace v8w {
 
 struct method_dispatcher_base
 {
-	virtual ~method_dispatcher_base() {}
+	virtual ~method_dispatcher_base() throw() {}
 };
 
 template <typename Class>
@@ -353,7 +353,7 @@ struct class_method<Class const, N>
 			{																\
 			}																\
 																			\
-			~method_dispatcher() 											\
+			~method_dispatcher() throw()									\
 			{																\
 				using namespace v8; 										\
 				Context::Scope context_scope(								\

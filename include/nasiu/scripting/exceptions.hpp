@@ -85,27 +85,6 @@ public:
 	}
 };
 
-class abstract_call_exception : public native_exception
-{
-	std::string msg_;
-
-public:
-	abstract_call_exception()
-	{
-	}
-
-	abstract_call_exception(
-			const std::string& msg)
-	: msg_(msg)
-	{
-	}
-
-	virtual
-	~abstract_call_exception() throw()
-	{
-	}
-};
-
 }}
 
 #endif /* __NASIU__SCRIPTING__EXCEPTIONS_HPP__ */

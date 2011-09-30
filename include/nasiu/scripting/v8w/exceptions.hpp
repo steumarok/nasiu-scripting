@@ -23,121 +23,89 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#if !defined(__NASIU__SCRIPTING__SCRIPT_ENGINE_HPP__)
-#define __NASIU__SCRIPTING__SCRIPT_ENGINE_HPP__
+#if !defined(__NASIU__SCRIPTING__V8W__EXCEPTIONS_HPP__)
+#define __NASIU__SCRIPTING__V8W__EXCEPTIONS_HPP__
 
-#include <string>
+#include <v8.h>
+#include <nasiu/scripting/v8w/engine_base.hpp>
+#include <nasiu/scripting/v8w/native_to_js.hpp>
+#include <nasiu/scripting/exceptions.hpp>
 
 namespace nasiu { namespace scripting {
 
-struct nil { };
+namespace v8w {
 
-struct undefined { };
-
-template<typename Tag>
-struct engine_traits;
-
-//template<typename Tag, typename Traits = engine_traits<Tag> >
-//class script_engine;
-
-template<typename Tag>
-class script;
-
-template<typename Tag>
-class interceptor
+class exception_wrapper_base
 {
+public:
+	virtual
+	v8::Handle<v8::Value>
+	to_js(
+			engine_base& e) const = 0;
 };
 
-template<typename Tag, typename Traits = engine_traits<Tag> >
-class script_engine
+template<class T>
+class exception_wrapper : public exception_wrapper_base
 {
-	typedef Traits traits;
-	typedef typename traits::engine_type engine_type;
-
-	engine_type engine_;
+	T* value_;
 
 public:
-	script_engine(interceptor<Tag>* i = 0)
-	: engine_(i)
+	exception_wrapper(const T& value)
+	: value_(new T(value))
 	{
 	}
 
-	template<typename T>
-	void
-	set(
-			const std::string& name,
-			T value)
+	v8::Handle<v8::Value>
+	to_js(
+			engine_base& e) const
 	{
-		engine_.set(name, value);
-	}
-
-	void
-	set(
-			const std::string& name,
-			const char* value)
-	{
-		engine_.set(name, std::string(value));
-	}
-
-	template<typename T>
-	T
-	get(
-			const std::string& name)
-	{
-		return engine_.get<T>(name);
-	}
-
-	void
-	exec(
-			const std::string& source)
-	{
-		engine_.exec(source);
-	}
-
-	template<typename R>
-	R
-	eval(
-			const std::string& source)
-	{
-		return engine_.eval<R>(source);
-	}
-
-	script<Tag>
-	compile(
-			const std::string& source)
-	{
-		return engine_.compile(source);
-	}
-
-	template<class C>
-	void
-	bind_class()
-	{
-		engine_.bind_class<C>();
-	}
-
-	template<class F>
-	void
-	bind_function(
-			const std::string& name,
-			F func)
-	{
-		engine_.bind_function(name, func);
-	}
-
-	engine_type&
-	get_engine()
-	{
-		return engine_;
+		invocation_scope scope(e);
+		return v8::ThrowException(native_to_js<const T*>()(value_, scope));
 	}
 };
 
-template<typename Tag>
-class script
+class v8w_exception : public script_exception
 {
+	engine_base* engine_;
+	v8::Persistent<v8::Value> value_;
 
+public:
+	v8w_exception()
+	{
+	}
+
+	v8w_exception(
+			const std::string& msg,
+			engine_base& e,
+			v8::Persistent<v8::Value> value)
+	: script_exception(msg),
+	  engine_(&e),
+	  value_(value)
+	{
+	}
+
+	virtual
+	~v8w_exception() throw()
+	{
+	}
+
+	template<class T>
+	T cast() const
+	{
+		using namespace v8;
+
+		invocation_scope scope(*engine_);
+		Context::Scope context_scope(engine_->get_context());
+
+		T result;
+    	js_to_native<T>()(result, value_, scope);
+
+		return result;
+	}
 };
+
+}
 
 }}
 
-#endif /* __NASIU__SCRIPTING__SCRIPT_ENGINE_HPP__ */
+#endif /* __NASIU__SCRIPTING__V8W__EXCEPTIONS_HPP__ */

@@ -34,21 +34,67 @@
 #include <nasiu/scripting/v8w/engine_base.hpp>
 #include <nasiu/scripting/v8w/adapters.hpp>
 #include <nasiu/scripting/v8w/script.hpp>
+#include <nasiu/scripting/v8w/exceptions.hpp>
 
 namespace nasiu { namespace scripting {
 
 namespace v8w {
 
-void check_exception(engine_base& e, v8::TryCatch& try_catch)
+std::string
+get_stack_trace(
+		int frame_limit)
 {
+	using namespace v8;
+
+	HandleScope handle_scope;
+
+	Handle<StackTrace> stack_trace =
+			StackTrace::CurrentStackTrace(frame_limit, StackTrace::kOverview);
+
+	std::ostringstream oss;
+	for (int i = 0; i < stack_trace->GetFrameCount(); ++i)
+	{
+		Handle<StackFrame> frame = stack_trace->GetFrame(i);
+
+		oss << *String::Utf8Value(frame->GetFunctionName())
+			<< " [line: " << frame->GetLineNumber()
+			<< ", column: " << frame->GetColumn() << "]"
+			<< std::endl;
+	}
+	return oss.str();
+}
+
+void
+check_exception(
+		engine_base& e,
+		v8::TryCatch& try_catch)
+{
+	using namespace v8;
+
 	if (try_catch.HasCaught())
 	{
 		std::string message;
 		invocation_scope scope(e);
 		js_to_native<std::string>()(message, try_catch.Exception(), scope);
-		throw script_exception(message);
+		throw v8w_exception(
+				message + "\nStack trace: " + get_stack_trace(),
+				e,
+				Persistent<Value>::New(try_catch.Exception()));
 	}
 }
+
+class default_interceptor : public interceptor<tags::v8w>
+{
+public:
+	virtual
+	v8::Handle<v8::Value>
+	on_native_call(
+			native_caller_base& caller,
+			invocation_scope& scope)
+	{
+		return caller.do_call(scope);
+	}
+};
 
 class engine : public engine_base
 {
@@ -57,12 +103,29 @@ class engine : public engine_base
 	typedef std::map<std::string, boost::shared_ptr<adapter_base> > adapter_map_type;
 	adapter_map_type adapter_map_;
 
+	interceptor<tags::v8w>* interceptor_;
+
 public:
-	engine()
+	engine(interceptor<tags::v8w>* i = 0)
+	: interceptor_(i)
 	{
 		using namespace v8;
 
 		context_ = Context::New();
+	}
+
+	interceptor<tags::v8w>&
+	get_interceptor() const
+	{
+		static default_interceptor def_interc;
+		if (interceptor_)
+		{
+			return *interceptor_;
+		}
+		else
+		{
+			return def_interc;
+		}
 	}
 
 	template<typename T>
@@ -160,10 +223,12 @@ engine::exec(const std::string& source)
 
 	Context::Scope context_scope(context_);
 
+	TryCatch try_catch;
+
 	Handle<String> script_source = String::New(source.c_str());
 	Handle<Script> js_script = Script::New(script_source);
 
-	TryCatch try_catch;
+	check_exception(*this, try_catch);
 
 	js_script->Run();
 
@@ -180,10 +245,12 @@ engine::eval(const std::string& source)
 
 	Context::Scope context_scope(context_);
 
+	TryCatch try_catch;
+
 	Handle<String> script_source = String::New(source.c_str());
 	Handle<Script> script = Script::New(script_source);
 
-	TryCatch try_catch;
+	check_exception(*this, try_catch);
 
 	Local<Value> script_result = script->Run();
 
@@ -277,7 +344,35 @@ struct native_to_js<T*>
 			T* from,
 			invocation_scope& scope)
 	{
-		return dynamic_cast<class_adapter<T>*>(scope.get_engine().get_adapter(class_info<T>::get_name()))->wrap(from, true);
+		class_adapter<T>* adapter = dynamic_cast<class_adapter<T>*>(
+				scope.get_engine().get_adapter(class_info<T>::get_name()));
+
+		if (!adapter)
+		{
+			throw native_exception(std::string("Adapter for class ") + class_info<T>::get_name() + " not found");
+		}
+
+		return adapter->wrap(from, true);
+	}
+};
+
+template<typename T>
+struct native_to_js<const T*>
+{
+	v8::Handle<v8::Value>
+	operator()(
+			const T* from,
+			invocation_scope& scope)
+	{
+		class_adapter<T>* adapter = dynamic_cast<class_adapter<T>*>(
+				scope.get_engine().get_adapter(class_info<T>::get_name()));
+
+		if (!adapter)
+		{
+			throw native_exception(std::string("Adapter for class ") + class_info<T>::get_name() + " not found");
+		}
+
+		return adapter->wrap(from, true);
 	}
 };
 
@@ -289,7 +384,35 @@ struct native_to_js<T&>
 			T& from,
 			invocation_scope& scope)
 	{
-		return dynamic_cast<class_adapter<T>*>(scope.get_engine().get_adapter(class_info<T>::get_name()))->wrap(&from, false);
+		class_adapter<T>* adapter = dynamic_cast<class_adapter<T>*>(
+				scope.get_engine().get_adapter(class_info<T>::get_name()));
+
+		if (!adapter)
+		{
+			throw native_exception(std::string("Adapter for class ") + class_info<T>::get_name() + " not found");
+		}
+
+		return adapter->wrap(&from, false);
+	}
+};
+
+template<typename T>
+struct native_to_js<const T&>
+{
+	v8::Handle<v8::Value>
+	operator()(
+			const T& from,
+			invocation_scope& scope)
+	{
+		class_adapter<T>* adapter = dynamic_cast<class_adapter<T>*>(
+				scope.get_engine().get_adapter(class_info<T>::get_name()));
+
+		if (!adapter)
+		{
+			throw native_exception(std::string("Adapter for class ") + class_info<T>::get_name() + " not found");
+		}
+
+		return adapter->wrap(&from, false);
 	}
 };
 
