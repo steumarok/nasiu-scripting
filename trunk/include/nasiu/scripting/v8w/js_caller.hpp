@@ -45,12 +45,18 @@ struct js_caller
 			int argc,
 			v8::Handle<v8::Value> argv[])
 	{
+		using namespace v8;
+
 		invocation_scope scope(e);
-		v8::Context::Scope context_scope(e.get_context());
-		v8::TryCatch try_catch;
+		Context::Scope context_scope(e.get_context());
+		TryCatch try_catch;
+
+		Local<Value> js_result = function->Call(recv, argc, argv);
+
+		check_exception(e, try_catch);
 
 		R result;
-    	js_to_native<R>()(result, function->Call(recv, argc, argv), scope);
+    	js_to_native<R>()(result, js_result, scope);
 
 		check_exception(e, try_catch);
 
@@ -65,14 +71,18 @@ struct js_caller
 			int argc,
 			v8::Handle<v8::Value> argv[])
 	{
-		invocation_scope scope(e);
-		v8::Context::Scope context_scope(e.get_context());
-		v8::TryCatch try_catch;
+		using namespace v8;
 
-		R result;
-		js_to_native<R>()(result, function->Call(recv, argc, argv), scope);
+		invocation_scope scope(e);
+		Context::Scope context_scope(e.get_context());
+		TryCatch try_catch;
+
+		Local<Value> js_result = function->Call(recv, argc, argv);
 
 		check_exception(e, try_catch);
+
+		R result;
+		js_to_native<R>()(result, js_result, scope);
 
 		return result;
 	}
@@ -85,12 +95,18 @@ struct js_caller
 			int argc,
 			v8::Handle<v8::Value> argv[])
 	{
+		using namespace v8;
+
 		invocation_scope scope(e);
-		v8::Context::Scope context_scope(e.get_context());
-		v8::TryCatch try_catch;
+		Context::Scope context_scope(e.get_context());
+		TryCatch try_catch;
+
+		Local<Value> js_result = function->Call(recv, argc, argv);
+
+		check_exception(e, try_catch);
 
 		R result;
-    	js_to_native<R>()(result, function->Call(recv, argc, argv), scope);
+    	js_to_native<R>()(result, js_result, scope);
 
 		check_exception(e, try_catch);
 
@@ -105,12 +121,18 @@ struct js_caller
 			int argc,
 			v8::Handle<v8::Value> argv[])
 	{
+		using namespace v8;
+
 		invocation_scope scope(e);
-		v8::Context::Scope context_scope(e.get_context());
-		v8::TryCatch try_catch;
+		Context::Scope context_scope(e.get_context());
+		TryCatch try_catch;
+
+		Local<Value> js_result = function->Call(recv, argc, argv);
+
+		check_exception(e, try_catch);
 
 		R result;
-		js_to_native<R>()(result, function->Call(recv, argc, argv), scope);
+    	js_to_native<R>()(result, js_result, scope);
 
 		check_exception(e, try_catch);
 
@@ -129,8 +151,10 @@ struct js_caller<void>
 			int argc,
 			v8::Handle<v8::Value> argv[])
 	{
-		v8::Context::Scope context_scope(e.get_context());
-		v8::TryCatch try_catch;
+		using namespace v8;
+
+		Context::Scope context_scope(e.get_context());
+		TryCatch try_catch;
 
 		function->Call(recv, argc, argv);
 
@@ -145,8 +169,10 @@ struct js_caller<void>
 			int argc,
 			v8::Handle<v8::Value> argv[])
 	{
-		v8::Context::Scope context_scope(e.get_context());
-		v8::TryCatch try_catch;
+		using namespace v8;
+
+		Context::Scope context_scope(e.get_context());
+		TryCatch try_catch;
 
 		function->Call(recv, argc, argv);
 
@@ -161,8 +187,10 @@ struct js_caller<void>
 			int argc,
 			v8::Handle<v8::Value> argv[])
 	{
-		v8::Context::Scope context_scope(e.get_context());
-		v8::TryCatch try_catch;
+		using namespace v8;
+
+		Context::Scope context_scope(e.get_context());
+		TryCatch try_catch;
 
 		function->Call(recv, argc, argv);
 
@@ -177,8 +205,10 @@ struct js_caller<void>
 			int argc,
 			v8::Handle<v8::Value> argv[])
 	{
-		v8::Context::Scope context_scope(e.get_context());
-		v8::TryCatch try_catch;
+		using namespace v8;
+
+		Context::Scope context_scope(e.get_context());
+		TryCatch try_catch;
 
 		function->Call(recv, argc, argv);
 

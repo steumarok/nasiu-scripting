@@ -26,6 +26,7 @@
 #if !defined(__NASIU__SCRIPTING__V8W__ENGINE_BASE_HPP__)
 #define __NASIU__SCRIPTING__V8W__ENGINE_BASE_HPP__
 
+#include <nasiu/scripting/v8w/tags.hpp>
 #include <string>
 #include <v8.h>
 
@@ -36,6 +37,14 @@ namespace v8w {
 class adapter_base;
 
 class invocation_scope;
+
+struct native_caller_base
+{
+	virtual
+	v8::Handle<v8::Value>
+	do_call(
+			invocation_scope& scope) = 0;
+};
 
 class engine_base
 {
@@ -48,6 +57,10 @@ public:
 	adapter_base*
 	get_adapter(
 			const std::string& name) const = 0;
+
+	virtual
+	interceptor<tags::v8w>&
+	get_interceptor() const = 0;
 };
 
 class adapter_base
@@ -75,7 +88,22 @@ check_exception(
 		engine_base& e,
 		v8::TryCatch& try_catch);
 
+std::string
+get_stack_trace(
+		int frame_limit = 10);
+
 }
+
+template<>
+class interceptor<tags::v8w>
+{
+public:
+	virtual
+	v8::Handle<v8::Value>
+	on_native_call(
+			v8w::native_caller_base& caller,
+			v8w::invocation_scope& scope) = 0;
+};
 
 }}
 

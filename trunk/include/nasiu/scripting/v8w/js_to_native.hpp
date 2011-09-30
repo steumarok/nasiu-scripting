@@ -44,7 +44,7 @@ struct js_to_native
 	bool
 	operator()(
 			T& to,
-			v8::Local<v8::Value> from,
+			v8::Handle<v8::Value> from,
 			invocation_scope& scope)
 	{
 		return false;
@@ -56,10 +56,10 @@ struct js_to_native<std::tm>
 {
 	bool operator()(
 			std::tm& to,
-			v8::Local<v8::Value> from,
+			v8::Handle<v8::Value> from,
 			invocation_scope& scope)
 	{
-		v8::Local<v8::Date> date = v8::Local<v8::Date>::Cast(from);
+		v8::Handle<v8::Date> date = v8::Handle<v8::Date>::Cast(from);
 
 		time_t raw_time = from->NumberValue()/1000;
 		to = *localtime(&raw_time);
@@ -74,7 +74,7 @@ struct js_to_native<short>
 {
 	bool operator()(
 			short& to,
-			v8::Local<v8::Value> from,
+			v8::Handle<v8::Value> from,
 			invocation_scope& scope)
 	{
 		to = from->Int32Value();
@@ -88,7 +88,7 @@ struct js_to_native<unsigned short>
 {
 	bool operator()(
 			short& to,
-			v8::Local<v8::Value> from,
+			v8::Handle<v8::Value> from,
 			invocation_scope& scope)
 	{
 		to = from->Uint32Value();
@@ -102,7 +102,7 @@ struct js_to_native<int>
 {
 	bool operator()(
 			int& to,
-			v8::Local<v8::Value> from,
+			v8::Handle<v8::Value> from,
 			invocation_scope& scope)
 	{
 		to = from->IntegerValue();
@@ -116,7 +116,7 @@ struct js_to_native<unsigned int>
 {
 	bool operator()(
 			unsigned int& to,
-			v8::Local<v8::Value> from,
+			v8::Handle<v8::Value> from,
 			invocation_scope& scope)
 	{
 		to = from->IntegerValue();
@@ -130,7 +130,7 @@ struct js_to_native<bool>
 {
 	bool operator()(
 			bool& to,
-			v8::Local<v8::Value> from,
+			v8::Handle<v8::Value> from,
 			invocation_scope& scope)
 	{
 		to = from->BooleanValue();
@@ -145,7 +145,7 @@ struct js_to_native<double>
 	bool
 	operator()(
 			double& to,
-			v8::Local<v8::Value> from,
+			v8::Handle<v8::Value> from,
 			invocation_scope& scope)
 	{
 		to = from->NumberValue();
@@ -159,7 +159,7 @@ struct js_to_native<float>
 {
 	bool operator()(
 			float& to,
-			v8::Local<v8::Value> from,
+			v8::Handle<v8::Value> from,
 			invocation_scope& scope)
 	{
 		to = from->NumberValue();
@@ -173,7 +173,7 @@ struct js_to_native<long long>
 {
 	bool operator()(
 			long long& to,
-			v8::Local<v8::Value> from,
+			v8::Handle<v8::Value> from,
 			invocation_scope& scope)
 	{
 		to = from->IntegerValue();
@@ -187,7 +187,7 @@ struct js_to_native<unsigned long long>
 {
 	bool operator()(
 			long long& to,
-			v8::Local<v8::Value> from,
+			v8::Handle<v8::Value> from,
 			invocation_scope& scope)
 	{
 		to = from->IntegerValue();
@@ -202,7 +202,7 @@ struct js_to_native<std::string>
 	bool
 	operator()(
 			std::string& to,
-			v8::Local<v8::Value> from,
+			v8::Handle<v8::Value> from,
 			invocation_scope& scope)
 	{
 		v8::String::Utf8Value utf8_value(from);
@@ -219,9 +219,14 @@ struct js_to_native<T*>
 	bool
 	operator()(
 			T*& to,
-			v8::Local<v8::Value> from,
+			v8::Handle<v8::Value> from,
 			invocation_scope& scope)
 	{
+		if (from.IsEmpty())
+		{
+			return false;
+		}
+
 		if (from->IsNull())
 		{
 			to = 0;
@@ -233,7 +238,7 @@ struct js_to_native<T*>
 			return false;
 		}
 
-		v8::Local<v8::Object> object = v8::Local<v8::Object>::Cast(from);
+		v8::Handle<v8::Object> object = v8::Handle<v8::Object>::Cast(from);
 
 		if (object.IsEmpty())
 		{
@@ -259,7 +264,7 @@ struct js_to_native_seq
 	bool
 	operator()(
 			C& to,
-			v8::Local<v8::Value> from,
+			v8::Handle<v8::Value> from,
 			invocation_scope& scope)
 	{
 		if (from.IsEmpty())
@@ -272,7 +277,7 @@ struct js_to_native_seq
 			return false;
 		}
 
-		v8::Local<v8::Array> array = v8::Local<v8::Array>::Cast(from);
+		v8::Handle<v8::Array> array = v8::Handle<v8::Array>::Cast(from);
 		for (uint32_t i = 0; i < array->Length(); i++)
 		{
 			v8::Local<v8::Value> js_el = array->Get(i);
@@ -305,7 +310,7 @@ struct js_to_native<std::map<K, V> >
 	bool
 	operator()(
 			std::map<K, V>& to,
-			v8::Local<v8::Value> from,
+			v8::Handle<v8::Value> from,
 			invocation_scope& scope)
 	{
 		if (from.IsEmpty())
@@ -318,7 +323,7 @@ struct js_to_native<std::map<K, V> >
 			return false;
 		}
 
-		v8::Local<v8::Object> obj = v8::Local<v8::Object>::Cast(from);
+		v8::Handle<v8::Object> obj = v8::Handle<v8::Object>::Cast(from);
 		v8::Local<v8::Array> prop_names = obj->GetPropertyNames();
 
 		for (uint32_t i = 0; i < prop_names->Length(); ++i)

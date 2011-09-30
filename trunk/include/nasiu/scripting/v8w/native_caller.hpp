@@ -29,6 +29,7 @@
 #include <nasiu/scripting/dynamic_caller.hpp>
 #include <nasiu/scripting/v8w/native_to_js.hpp>
 #include <nasiu/scripting/v8w/invocation_scope.hpp>
+#include <nasiu/scripting/v8w/exceptions.hpp>
 
 namespace nasiu { namespace scripting {
 
@@ -37,8 +38,11 @@ namespace v8w {
 class engine;
 
 template<typename F, typename P, typename R>
-struct native_caller : dynamic_caller<F, P, R>
+struct native_caller : native_caller_base
 {
+	F func_;
+	P params_;
+
 	v8::Handle<v8::Value>
 	operator()(
 			engine_base& e,
@@ -47,20 +51,41 @@ struct native_caller : dynamic_caller<F, P, R>
 	{
 	    try
 	    {
+	    	func_ = pmf;
+	    	params_ = params;
+
+	    	interceptor<tags::v8w>& i = e.get_interceptor();
 	    	invocation_scope scope(e);
-	    	return native_to_js<R>()(dynamic_caller<F, P, R>::operator()(pmf, params), scope);
-	    }
-	    catch (native_exception& e)
+
+	    	return i.on_native_call(*this, scope);
+		}
+	    catch (const exception_wrapper_base& ex)
 	    {
-	    	return v8::ThrowException(v8::String::New(e.what()));
+	    	return ex.to_js(e);
 	    }
+	    catch (const std::exception& ex)
+	    {
+	    	return v8::ThrowException(v8::String::New(ex.what()));
+	    }
+	    catch (...)
+	    {
+	    	return v8::ThrowException(v8::String::New("Unknown exception"));
+	    }
+	}
+
+	v8::Handle<v8::Value> do_call(invocation_scope& scope)
+	{
+		return native_to_js<R>()(dynamic_caller<F, P, R>()(func_, params_), scope);
 	}
 };
 
 template<typename P, typename R>
 template<typename T>
-struct native_caller<boost::factory<T*>, P, R> : dynamic_caller<boost::factory<T*>, P, R>
+struct native_caller<boost::factory<T*>, P, R> : native_caller_base
 {
+	boost::factory<T*> func_;
+	P params_;
+
 	v8::Handle<v8::Value>
 	operator()(
 			engine_base& e,
@@ -69,34 +94,74 @@ struct native_caller<boost::factory<T*>, P, R> : dynamic_caller<boost::factory<T
 	{
 	    try
 	    {
-	    	invocation_scope scope(e);
-	    	return native_to_js<R>()(dynamic_caller<boost::factory<T*>, P, R>::operator()(pmf, params), scope);
-	    }
-	    catch (native_exception& e)
+	    	func_ = pmf;
+	    	params_ = params;
+
+	    	interceptor<tags::v8w>& i = e.get_interceptor();
+	    	invocation_scope& scope(e);
+
+	    	return i.on_native_call(*this, scope);
+		}
+	    catch (const exception_wrapper_base& ex)
 	    {
-	    	return v8::ThrowException(v8::String::New(e.what()));
+	    	return ex.to_js(e);
 	    }
+	    catch (const std::exception& ex)
+	    {
+	    	return v8::ThrowException(v8::String::New(ex.what()));
+	    }
+	    catch (...)
+	    {
+	    	return v8::ThrowException(v8::String::New("Unknown exception"));
+	    }
+	}
+
+	v8::Handle<v8::Value> do_call(invocation_scope& scope)
+	{
+		return native_to_js<R>()(dynamic_caller<boost::factory<T*>, P, R>()(func_, params_), scope);
 	}
 };
 
 template<typename F, typename P>
-struct native_caller<F, P, void> : dynamic_caller<F, P, void>
+struct native_caller<F, P, void> : native_caller_base
 {
+	F func_;
+	P params_;
+
 	v8::Handle<v8::Value>
 	operator()(
-			engine_base&,
+			engine_base& e,
 			F pmf,
 			const P& params)
 	{
 	    try
 	    {
-	    	dynamic_caller<F, P, void>::operator()(pmf, params);
-			return v8::Undefined();
+	    	func_ = pmf;
+	    	params_ = params;
+
+	    	interceptor<tags::v8w>& i = e.get_interceptor();
+	    	invocation_scope scope(e);
+
+	    	return i.on_native_call(*this, scope);
 		}
-	    catch (native_exception& e)
+	    catch (const exception_wrapper_base& ex)
 	    {
-	    	return v8::ThrowException(v8::String::New(e.what()));
+	    	return ex.to_js(e);
 	    }
+	    catch (const std::exception& ex)
+	    {
+	    	return v8::ThrowException(v8::String::New(ex.what()));
+	    }
+	    catch (...)
+	    {
+	    	return v8::ThrowException(v8::String::New("Unknown exception"));
+	    }
+	}
+
+	v8::Handle<v8::Value> do_call(invocation_scope&)
+	{
+    	dynamic_caller<F, P, void>()(func_, params_);
+    	return v8::Undefined();
 	}
 };
 
