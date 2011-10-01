@@ -323,6 +323,8 @@ struct js_to_native<std::map<K, V> >
 			return false;
 		}
 
+		v8::HandleScope handle_scope;
+
 		v8::Handle<v8::Object> obj = v8::Handle<v8::Object>::Cast(from);
 		v8::Local<v8::Array> prop_names = obj->GetPropertyNames();
 

@@ -356,8 +356,6 @@ struct class_method<Class const, N>
 			~method_dispatcher() throw()									\
 			{																\
 				using namespace v8; 										\
-				Context::Scope context_scope(								\
-						get_engine().get_context()); 						\
 				if (!object_.IsNearDeath())									\
 					object_.Dispose();										\
 			} 																\

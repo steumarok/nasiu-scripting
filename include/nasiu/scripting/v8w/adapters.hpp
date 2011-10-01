@@ -26,6 +26,7 @@
 #if !defined(__NASIU__SCRIPTING__V8W__ADAPTERS_HPP__)
 #define __NASIU__SCRIPTING__V8W__ADAPTERS_HPP__
 
+#include <list>
 #include <v8.h>
 #include <nasiu/scripting/v8w/js_caller.hpp>
 #include <nasiu/scripting/v8w/adapt_class.hpp>
@@ -275,20 +276,94 @@ struct inherit_setter<boost::mpl::void_>
 	}
 };
 
+template<typename T, bool abstract>
+struct thrower
+{
+	void operator()(const T& object) const
+	{
+		throw object;
+	}
+};
+
 template<typename T>
-class class_adapter : public adapter_base
+struct thrower<T, true>
+{
+	void operator()(const T&) const
+	{
+	}
+};
+
+template<typename T, bool abstract>
+struct wrapper_thrower
+{
+	void operator()(const T& e) const
+	{
+		throw v8w::exception_wrapper<T>(e);
+	}
+};
+
+template<typename T>
+struct wrapper_thrower<T, true>
+{
+	void operator()(const T&) const
+	{
+		throw std::exception();
+	}
+};
+
+template<typename T>
+class class_adapter : public class_adapter_base
 {
 	v8::Persistent<v8::FunctionTemplate> function_template_;
 
 public:
 	class_adapter(engine_base& e)
-	: adapter_base(e)
+	: class_adapter_base(e)
 	{
 	}
 
-	const char* get_name() const
+	const char*
+	get_name() const
 	{
 		return class_info<T>::get_name();
+	}
+
+	void
+	cast_and_throw(
+			void* obj)
+	{
+		assert(obj != 0);
+
+		T* object = static_cast<T*>(obj);
+
+		thrower<T, boost::is_abstract<T>::value >()(*object);
+	}
+
+	v8::Handle<v8::Value>
+	catch_and_throw(
+			native_caller_base& caller,
+			invocation_scope& scope,
+			std::list<class_adapter_base*>::const_iterator next,
+			std::list<class_adapter_base*>::const_iterator end) const
+	{
+		try
+		{
+			if (next == end)
+			{
+				return caller.make_call(scope);
+			}
+			else
+			{
+				return (*next)->catch_and_throw(caller, scope, ++next, end);
+			}
+		}
+		catch (const T& e)
+		{
+			wrapper_thrower<T, boost::is_abstract<T>::value >()(e);
+
+			// quiet compilers.
+			return v8::Undefined();
+		}
 	}
 
 	v8::Handle<v8::FunctionTemplate>
@@ -359,8 +434,6 @@ private:
 	    void* ptr = pobj->GetPointerFromInternalField(0);
 	    T* object = static_cast<T*>(ptr);
 
-		//cout << "Dispose " << obj << endl;
-
 		delete object;
 
 		pv.Dispose();
@@ -377,12 +450,14 @@ private:
 		if (args.Length() == 1 && args[0]->IsExternal())
 		{
 			args.This()->SetPointerInInternalField(0, External::Unwrap(args[0]));
+			args.This()->SetPointerInInternalField(1, adapter);
 			return args.This();
 		}
 		else
 		{
 			Persistent<Object> object = Persistent<Object>::New(args.This());
 
+			args.This()->SetPointerInInternalField(1, adapter);
 			object.MakeWeak(0, weak_callback);
 
 			invocation_scope scope(adapter->get_engine());
@@ -407,7 +482,7 @@ protected:
 		function_template->SetClassName(String::New(class_info<T>::get_name()));
 
 		Handle<ObjectTemplate> instance_template = function_template->InstanceTemplate();
-		instance_template->SetInternalFieldCount(1);
+		instance_template->SetInternalFieldCount(2);
 
 		accessor_binder<T, 0>()(*this, instance_template);
 

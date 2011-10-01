@@ -54,10 +54,12 @@ struct native_caller : native_caller_base
 	    	func_ = pmf;
 	    	params_ = params;
 
-	    	interceptor<tags::v8w>& i = e.get_interceptor();
+	    	//interceptor<tags::v8w>& i = e.get_interceptor();
 	    	invocation_scope scope(e);
 
-	    	return i.on_native_call(*this, scope);
+	    	return e.catch_and_throw(*this, scope);
+
+	    	//return i.on_native_call(*this, scope);
 		}
 	    catch (const exception_wrapper_base& ex)
 	    {
@@ -73,7 +75,7 @@ struct native_caller : native_caller_base
 	    }
 	}
 
-	v8::Handle<v8::Value> do_call(invocation_scope& scope)
+	v8::Handle<v8::Value> make_call(invocation_scope& scope)
 	{
 		return native_to_js<R>()(dynamic_caller<F, P, R>()(func_, params_), scope);
 	}
@@ -97,10 +99,9 @@ struct native_caller<boost::factory<T*>, P, R> : native_caller_base
 	    	func_ = pmf;
 	    	params_ = params;
 
-	    	interceptor<tags::v8w>& i = e.get_interceptor();
-	    	invocation_scope& scope(e);
+	    	invocation_scope scope(e);
 
-	    	return i.on_native_call(*this, scope);
+	    	return e.catch_and_throw(*this, scope);
 		}
 	    catch (const exception_wrapper_base& ex)
 	    {
@@ -116,7 +117,7 @@ struct native_caller<boost::factory<T*>, P, R> : native_caller_base
 	    }
 	}
 
-	v8::Handle<v8::Value> do_call(invocation_scope& scope)
+	v8::Handle<v8::Value> make_call(invocation_scope& scope)
 	{
 		return native_to_js<R>()(dynamic_caller<boost::factory<T*>, P, R>()(func_, params_), scope);
 	}
@@ -139,10 +140,9 @@ struct native_caller<F, P, void> : native_caller_base
 	    	func_ = pmf;
 	    	params_ = params;
 
-	    	interceptor<tags::v8w>& i = e.get_interceptor();
 	    	invocation_scope scope(e);
 
-	    	return i.on_native_call(*this, scope);
+	    	return e.catch_and_throw(*this, scope);
 		}
 	    catch (const exception_wrapper_base& ex)
 	    {
@@ -158,7 +158,7 @@ struct native_caller<F, P, void> : native_caller_base
 	    }
 	}
 
-	v8::Handle<v8::Value> do_call(invocation_scope&)
+	v8::Handle<v8::Value> make_call(invocation_scope&)
 	{
     	dynamic_caller<F, P, void>()(func_, params_);
     	return v8::Undefined();
