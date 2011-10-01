@@ -48,7 +48,20 @@ NASIU_V8W_ADAPT_CLASS(
 	Base, ,
 	,
 	(method0)
-	(method01),);
+	(method01),
+);
+
+/*NASIU_V8W_NATIVE_CALLER_OVERRIDE({
+	try
+	{
+		CALL_FUNCTION();
+	}
+	catch (const ex1& e)
+	{
+		return exception_wrapper<ex1>(e).to_js();
+	}
+})*/
+
 
 class A
 {
@@ -119,7 +132,8 @@ NASIU_V8W_ADAPT_CLASS(
 	(method2)
 	(method3),
 	("n", get_n, set_n)
-	("n1", get_n,));
+	("n1", get_n,)
+);
 
 
 class B : public A
@@ -229,6 +243,7 @@ void func3()
 	throw nasiu::scripting::native_exception("native error");
 }
 
+
 string get_content(const string& f)
 {
 	ostringstream stream_source;
@@ -247,20 +262,39 @@ string get_content(const string& f)
 	return stream_source.str();
 }
 
+struct my_traits : nasiu::scripting::engine_traits<nasiu::scripting::tags::v8w>
+{
+
+};
+
+using namespace nasiu::scripting;
+
+class test_interceptor : public v8w::default_interceptor
+{
+public:
+	v8::Handle<v8::Value>
+	on_native_call(
+			v8w::native_caller_base& caller,
+			v8w::invocation_scope& scope)
+	{
+		cout << "on_native_call"<< endl;
+		return v8w::default_interceptor::on_native_call(caller, scope);
+	}
+};
 
 
 int main()
 {
 	{
-		using namespace nasiu::scripting;
-
-		script_engine<tags::v8w> se;
+		test_interceptor i;
+		script_engine<tags::v8w> se(&i);
 
 		se.bind_class<Base>();
 		se.bind_class<A>();
 		se.bind_class<B>();
 		se.bind_function("func1", func1);
 		se.bind_function("func2", func2);
+
 
 		se.set("var1", "var1-content");
 		se.set("var2", 10000);
@@ -301,11 +335,12 @@ int main()
 				"ExtBase.prototype.method01 = function(n)"
 				"{"
 				"	Base.prototype.method01.call(this);"
-				"};"
-				"ExtBase"
+				"};ExtBase;"
 		);
 		Base* base = type_ExtBase.new_instance();
+		try{
 		cout << "base.method0() "; base->method0(); cout << endl;
+		}catch(const script_exception&e){cout<<e.what();}
 //		delete base;
 
 
