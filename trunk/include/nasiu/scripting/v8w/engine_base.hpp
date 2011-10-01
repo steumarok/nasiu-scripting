@@ -42,7 +42,7 @@ struct native_caller_base
 {
 	virtual
 	v8::Handle<v8::Value>
-	do_call(
+	make_call(
 			invocation_scope& scope) = 0;
 };
 
@@ -61,6 +61,11 @@ public:
 	virtual
 	interceptor<tags::v8w>&
 	get_interceptor() const = 0;
+
+	virtual v8::Handle<v8::Value>
+	catch_and_throw(
+			native_caller_base& caller,
+			invocation_scope& scope) const = 0;
 };
 
 class adapter_base
@@ -81,6 +86,26 @@ public:
 	{
 		return engine_;
 	}
+};
+
+class class_adapter_base : public adapter_base
+{
+public:
+	class_adapter_base(engine_base& e)
+	: adapter_base(e)
+	{
+	}
+
+	virtual void
+	cast_and_throw(
+			void* obj) = 0;
+
+	virtual v8::Handle<v8::Value>
+	catch_and_throw(
+			native_caller_base& caller,
+			invocation_scope& scope,
+			std::list<class_adapter_base*>::const_iterator curr,
+			std::list<class_adapter_base*>::const_iterator end) const = 0;
 };
 
 void

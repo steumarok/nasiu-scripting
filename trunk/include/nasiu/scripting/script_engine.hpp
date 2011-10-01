@@ -116,6 +116,13 @@ public:
 		engine_.bind_class<C>();
 	}
 
+	template<class C>
+	void
+	bind_exception()
+	{
+		engine_.bind_exception<C>();
+	}
+
 	template<class F>
 	void
 	bind_function(

@@ -26,6 +26,7 @@
 #if !defined(__NASIU__SCRIPTING__V8W__ENGINE_HPP__)
 #define __NASIU__SCRIPTING__V8W__ENGINE_HPP__
 
+#include <list>
 #include <typeinfo>
 #include <map>
 #include <v8.h>
@@ -75,11 +76,26 @@ check_exception(
 	{
 		std::string message;
 		invocation_scope scope(e);
-		js_to_native<std::string>()(message, try_catch.Exception(), scope);
+
+		Local<Value> js_exception = try_catch.Exception();
+		if (js_exception->IsObject())
+		{
+			Local<Object> js_object = Local<Object>::Cast(js_exception);
+
+			if (js_object->InternalFieldCount() == 2)
+			{
+				class_adapter_base* adapter =
+						static_cast<class_adapter_base*>(js_object->GetPointerFromInternalField(1));
+				adapter->cast_and_throw(js_object->GetPointerFromInternalField(0));
+				return;
+			}
+		}
+
+		js_to_native<std::string>()(message, js_exception, scope);
 		throw v8w_exception(
 				message + "\nStack trace: " + get_stack_trace(),
 				e,
-				Persistent<Value>::New(try_catch.Exception()));
+				Persistent<Value>::New(js_exception));
 	}
 }
 
@@ -92,7 +108,7 @@ public:
 			native_caller_base& caller,
 			invocation_scope& scope)
 	{
-		return caller.do_call(scope);
+		return caller.make_call(scope);
 	}
 };
 
@@ -104,6 +120,7 @@ class engine : public engine_base
 	adapter_map_type adapter_map_;
 
 	interceptor<tags::v8w>* interceptor_;
+	std::list<class_adapter_base*> exceptions_;
 
 public:
 	engine(interceptor<tags::v8w>* i = 0)
@@ -112,6 +129,23 @@ public:
 		using namespace v8;
 
 		context_ = Context::New();
+	}
+
+	v8::Handle<v8::Value>
+	catch_and_throw(
+			native_caller_base& caller,
+			invocation_scope& scope) const
+	{
+		if (exceptions_.size() > 0)
+		{
+			std::list<class_adapter_base*>::const_iterator it = exceptions_.begin();
+			return (*it)->catch_and_throw(
+					caller, scope, ++it, exceptions_.end());
+		}
+		else
+		{
+			return caller.make_call(scope);
+		}
 	}
 
 	interceptor<tags::v8w>&
@@ -175,8 +209,12 @@ public:
 			const std::string& source);
 
 	template<typename C>
-	void
+	class_adapter_base*
 	bind_class();
+
+	template<typename C>
+	void
+	bind_exception();
 
 	adapter_base*
 	get_adapter(
@@ -192,6 +230,7 @@ public:
 	{
 		return context_;
 	}
+
 };
 
 script<tags::v8w>
@@ -264,7 +303,7 @@ engine::eval(const std::string& source)
 }
 
 template<typename C>
-void
+class_adapter_base*
 engine::bind_class()
 {
 	using namespace v8;
@@ -293,6 +332,17 @@ engine::bind_class()
 	{
 		inherit_setter<parent_class>()(*this, function_template);
 	}
+
+	return adapter;
+}
+
+template<typename C>
+void
+engine::bind_exception()
+{
+	class_adapter_base* adapter = bind_class<C>();
+
+	exceptions_.push_back(adapter);
 }
 
 adapter_base*
