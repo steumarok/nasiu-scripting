@@ -85,7 +85,7 @@ struct method_binder
    	   		//
    	   		// Retrieve base pmf (defined in dispatcher_t structs).
    	   		//
-   		    typedef typename dispatchers<T, I>::type dispatcher;
+   		    typedef typename abstract_finder<T, I>::dispatcher dispatcher;
    		    typedef typename dispatcher::pmf_type base_pmf_type;
    		    base_pmf_type base_pmf = dispatcher::get_base_pmf();
 

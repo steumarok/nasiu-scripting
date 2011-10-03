@@ -333,6 +333,7 @@ invoke_constructor(
 	}
 	catch (const native_exception& e)
 	{
+
 		return ThrowException(String::New(e.what()));
 	}
 
