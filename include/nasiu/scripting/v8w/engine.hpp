@@ -117,7 +117,9 @@ class engine : public engine_base
 	v8::Persistent<v8::Context> context_;
 
 	typedef std::map<std::string, boost::shared_ptr<adapter_base> > adapter_map_type;
+	typedef std::map<std::string, adapter_base*> class_adapter_map_type;
 	adapter_map_type adapter_map_;
+	class_adapter_map_type class_adapter_map_;
 
 	interceptor<tags::v8w>* interceptor_;
 	std::list<class_adapter_base*> exceptions_;
@@ -210,15 +212,21 @@ public:
 
 	template<typename C>
 	class_adapter_base*
-	bind_class();
+	bind_class(
+			const std::string& name);
 
 	template<typename C>
 	void
-	bind_exception();
+	bind_exception(
+			const std::string& name);
 
 	adapter_base*
 	get_adapter(
 			const std::string& name) const;
+
+	adapter_base*
+	get_class_adapter(
+			const std::string& fqn) const;
 
 	template<typename F>
 	void
@@ -304,24 +312,21 @@ engine::eval(const std::string& source)
 
 template<typename C>
 class_adapter_base*
-engine::bind_class()
+engine::bind_class(
+		const std::string& name)
 {
 	using namespace v8;
 
 	HandleScope handle_scope;
 
-	class_adapter<C>* adapter = new class_adapter<C>(*this);
-
-	adapter_map_.insert(typename adapter_map_type::value_type(
-			class_info<C>::get_name(),
-			boost::shared_ptr<adapter_base>(adapter)));
+	boost::shared_ptr<class_adapter<C> > adapter(new class_adapter<C>(*this));
 
 	Handle<FunctionTemplate> function_template = adapter->get_function_template();
 
 	Context::Scope context_scope(context_);
 
 	context_->Global()->Set(
-			String::New(adapter->get_name()),
+			String::New(name.c_str()),
 			function_template->GetFunction());
 
 	//
@@ -333,14 +338,23 @@ engine::bind_class()
 		inherit_setter<parent_class>()(*this, function_template);
 	}
 
-	return adapter;
+	adapter_map_.insert(typename adapter_map_type::value_type(
+			name,
+			adapter));
+
+	class_adapter_map_.insert(typename class_adapter_map_type::value_type(
+			class_info<C>::get_name(),
+			adapter.get()));
+
+	return adapter.get();
 }
 
 template<typename C>
 void
-engine::bind_exception()
+engine::bind_exception(
+		const std::string& name)
 {
-	class_adapter_base* adapter = bind_class<C>();
+	class_adapter_base* adapter = bind_class<C>(name);
 
 	exceptions_.push_back(adapter);
 }
@@ -354,6 +368,23 @@ engine::get_adapter(
 	if (it != adapter_map_.end())
 	{
 		return it->second.get();
+	}
+	else
+	{
+		return 0;
+	}
+}
+
+adapter_base*
+engine::get_class_adapter(
+		const std::string& fqn) const
+{
+	typename class_adapter_map_type::const_iterator it(
+			class_adapter_map_.find(fqn));
+
+	if (it != class_adapter_map_.end())
+	{
+		return it->second;
 	}
 	else
 	{
@@ -395,7 +426,7 @@ struct native_to_js<T*>
 			invocation_scope& scope)
 	{
 		class_adapter<T>* adapter = dynamic_cast<class_adapter<T>*>(
-				scope.get_engine().get_adapter(class_info<T>::get_name()));
+				scope.get_engine().get_class_adapter(class_info<T>::get_name()));
 
 		if (!adapter)
 		{
@@ -415,7 +446,7 @@ struct native_to_js<const T*>
 			invocation_scope& scope)
 	{
 		class_adapter<T>* adapter = dynamic_cast<class_adapter<T>*>(
-				scope.get_engine().get_adapter(class_info<T>::get_name()));
+				scope.get_engine().get_class_adapter(class_info<T>::get_name()));
 
 		if (!adapter)
 		{
@@ -435,7 +466,7 @@ struct native_to_js<T&>
 			invocation_scope& scope)
 	{
 		class_adapter<T>* adapter = dynamic_cast<class_adapter<T>*>(
-				scope.get_engine().get_adapter(class_info<T>::get_name()));
+				scope.get_engine().get_class_adapter(class_info<T>::get_name()));
 
 		if (!adapter)
 		{

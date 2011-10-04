@@ -250,7 +250,7 @@ struct inherit_setter
 		using namespace v8;
 
 		adapter_base* parent_adapter =
-				e.get_adapter(class_info<T>::get_name());
+				e.get_class_adapter(class_info<T>::get_name());
 
 		if (parent_adapter)
 		{
