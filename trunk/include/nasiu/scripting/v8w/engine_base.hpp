@@ -59,6 +59,11 @@ public:
 			const std::string& name) const = 0;
 
 	virtual
+	adapter_base*
+	get_class_adapter(
+			const std::string& fqn) const = 0;
+
+	virtual
 	interceptor<tags::v8w>&
 	get_interceptor() const = 0;
 

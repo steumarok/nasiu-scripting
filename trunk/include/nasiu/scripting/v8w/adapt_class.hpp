@@ -322,6 +322,7 @@ struct class_method<Class const, N>
     			BOOST_PP_IS_EMPTY(parent),									\
     			boost::mpl::void_,											\
     			parent) parent_class; 										\
+    			enum {BOOST_PP_SEQ_FOR_EACH_I(NASIU_V8W_ADAPT_CLASS_M_ENUM, ~, mseq)}; \
 		};																	\
         BOOST_PP_SEQ_FOR_EACH_I(NASIU_V8W_ADAPT_CLASS_M,					\
         		(cl_name, BOOST_PP_SEQ_SIZE(cseq)), mseq)					\
@@ -430,6 +431,9 @@ struct class_method<Class const, N>
 							BOOST_PP_TUPLE_ELEM(2, 1, data), 				\
 							NASIU_V8W_CTOR_PARAM_USE, ~))     				\
 	/***/
+
+#define NASIU_V8W_ADAPT_CLASS_M_ENUM(r, data, i, method) \
+	BOOST_PP_COMMA_IF(i) BOOST_PP_TUPLE_ELEM(1, 0, method)
 
 #define NASIU_V8W_ADAPT_CLASS_M(r, data, i, xy)								\
 	template <>																\
