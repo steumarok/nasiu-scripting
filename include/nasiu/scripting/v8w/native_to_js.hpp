@@ -183,6 +183,18 @@ struct native_to_js<std::string>
 };
 
 template<>
+struct native_to_js<const std::string&>
+{
+	v8::Handle<v8::Value>
+	operator()(
+			const std::string& from,
+			invocation_scope& scope)
+	{
+		return v8::String::New(from.c_str());
+	}
+};
+
+template<>
 struct native_to_js<char*>
 {
 	v8::Handle<v8::Value>

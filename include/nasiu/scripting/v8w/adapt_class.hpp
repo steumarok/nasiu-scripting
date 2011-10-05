@@ -412,15 +412,6 @@ struct class_method<Class const, N>
 	, public dispatcher_concrete<class_method<class_type, i>::param_size::value, class_type, i, int>						\
 	    /***/
 
-
-/*#define NASIU_V8W_METHOD_DISPATCHER_METHOD_INFO(r, cl_name, i, xy)			\
-	template <> 															\
-	struct dispatchers<cl_name, i> {										\
-    	typedef BOOST_PP_CAT(adapter_, cl_name)								\
-				::BOOST_PP_CAT(dispatcher, i) type;							\
-    }; 																		\
-	*/
-
 #define NASIU_V8W_METHOD_DISPATCHER_INHERITANCE(r, cl_name, i, xy)			\
 	, public abstract_finder<cl_name, i>::dispatcher										\
 	/***/
@@ -436,6 +427,14 @@ struct class_method<Class const, N>
 	BOOST_PP_COMMA_IF(i) BOOST_PP_TUPLE_ELEM(1, 0, method)
 
 #define NASIU_V8W_ADAPT_CLASS_M(r, data, i, xy)								\
+	namespace BOOST_PP_CAT(method_, BOOST_PP_TUPLE_ELEM(1, 0, xy)) { \
+		template<typename Class0, typename Overloaded, typename Class1> struct method_type; \
+		template<typename Overloaded, typename Class1> \
+		struct method_type<BOOST_PP_TUPLE_ELEM(2, 0, data), Overloaded, Class1> \
+		{ \
+			typedef BOOST_TYPEOF(&Class1::BOOST_PP_TUPLE_ELEM(1, 0, xy)) type; \
+		}; \
+	} \
 	template <>																\
 	struct class_method<BOOST_PP_TUPLE_ELEM(2, 0, data), i>					\
 	{\
@@ -443,19 +442,22 @@ struct class_method<Class const, N>
 		static const char* get_name()										\
 		{ 																	\
 			return BOOST_STRINGIZE(BOOST_PP_TUPLE_ELEM(1, 0, xy)); 			\
-		}																	\
-		typedef BOOST_TYPEOF(&class_type::BOOST_PP_TUPLE_ELEM(1, 0, xy)) type;    					\
+		} \
+		typedef typename BOOST_PP_CAT(method_, BOOST_PP_TUPLE_ELEM(1, 0, xy))::method_type< \
+					BOOST_PP_TUPLE_ELEM(2, 0, data), \
+					boost::mpl::true_, \
+					BOOST_PP_TUPLE_ELEM(2, 0, data) > resolved_type; \
+		typedef typename resolved_type::type type; \
 		static type get_pmf()                                          		\
 		{																	\
 			return &BOOST_PP_TUPLE_ELEM(2, 0, data)							\
 					::BOOST_PP_TUPLE_ELEM(1, 0, xy);  				 		\
 		};																	\
-		typedef BOOST_TYPEOF(&class_type::BOOST_PP_TUPLE_ELEM(1, 0, xy)) fn_type;						\
 		typedef typename boost::function_types::parameter_types<			\
-			fn_type>::type param_types; 									\
+			type>::type param_types; 									\
 		typedef boost::mpl::size<param_types> param_size; 					\
 		typedef typename boost::function_types::result_type<				\
-			fn_type>::type rtype; 											\
+			type>::type rtype; 											\
 	};																		\
 	NASIU_V8W_CALL_ADAPTER(													\
 			BOOST_PP_TUPLE_ELEM(2, 0, data), /*cl_name*/ 					\
@@ -497,5 +499,29 @@ struct class_method<Class const, N>
 #define NASIU_V8W_ADAPT_CLASS_A_NO_SETTER(cl_name) 							\
 	typedef boost::mpl::false_ setter_type;    								\
 	/***/
+
+
+#define NASIU_V8W_RESOLVE_OVERLOADS(cls, seq) \
+	namespace nasiu { namespace scripting { namespace v8w { \
+	BOOST_PP_SEQ_FOR_EACH_I(NASIU_V8W_RESOLVE_OVERLOADS_DECL, cls, \
+			BOOST_PP_CAT(NASIU_V8W_RESOLVE_OVERLOADS_M_X seq, 0));  \
+	}}}
+
+#define NASIU_V8W_RESOLVE_OVERLOADS_M_X(a,b,c) ((a,b,c)) NASIU_V8W_RESOLVE_OVERLOADS_M_Y
+#define NASIU_V8W_RESOLVE_OVERLOADS_M_Y(a,b,c) ((a,b,c)) NASIU_V8W_RESOLVE_OVERLOADS_M_X
+#define NASIU_V8W_RESOLVE_OVERLOADS_M_X0
+#define NASIU_V8W_RESOLVE_OVERLOADS_M_Y0
+
+#define NASIU_V8W_RESOLVE_OVERLOADS_STRUCT(r, data, i, tuple) \
+	struct BOOST_PP_TUPLE_ELEM(3, 0, tuple);
+
+#define NASIU_V8W_RESOLVE_OVERLOADS_DECL(r, cls, i, tuple) \
+	namespace BOOST_PP_CAT(method_, BOOST_PP_TUPLE_ELEM(3, 0, tuple)) { \
+		template<typename Class0, typename Overloaded, typename Class1> struct method_type; \
+		template<typename Class1> struct method_type<cls, boost::mpl::true_, Class1> \
+		{    \
+			typedef BOOST_PP_TUPLE_ELEM(3, 1, tuple)(cls::*type)BOOST_PP_TUPLE_ELEM(3, 2, tuple); \
+		}; \
+	}
 
 #endif /* __NASIU__SCRIPTING__V8W__ADAPT_CLASS_HPP__ */
