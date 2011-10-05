@@ -111,16 +111,18 @@ public:
 
 	template<class C>
 	void
-	bind_class()
+	bind_class(
+			const std::string& name)
 	{
-		engine_.bind_class<C>();
+		engine_.bind_class<C>(name);
 	}
 
 	template<class C>
 	void
-	bind_exception()
+	bind_exception(
+			const std::string& name)
 	{
-		engine_.bind_exception<C>();
+		engine_.bind_exception<C>(name);
 	}
 
 	template<class F>
