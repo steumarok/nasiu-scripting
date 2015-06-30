@@ -1,0 +1,23 @@
+# Reference #
+
+(under construction, see also example code)
+
+## NASIU\_V8W\_ADAPT\_CLASS ##
+
+```
+
+NASIU_V8W_ADAPT_CLASS(
+*class*,
+*base*,
+*ctor params*,
+*methods*,
+*accessors*);
+```
+
+| **Parameter** | **Description** | **Syntax** |
+|:--------------|:----------------|:-----------|
+| **class**     | the class to adapt. | class name |
+| **base**      | the base class, if present | class name or empty |
+| **ctor params** | constructor parameter types | (t1)(t2)...(tn) |
+| **methods**   | method of the class to be exposed in scripting | (method1)(method2)...(methodn) |
+| **accessors** | accessors setters and getters | ("a1",getter1,setter1)("a2",getter2,)... |
